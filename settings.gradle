@@ -1,0 +1,14 @@
+rootProject.name = 'alfred-parent'
+
+include 'alfred'
+include 'alfred:generator'
+include 'alfred:gradle-plugin'
+include 'alfred:example'
+include 'alfred:runtime'
+
+rootProject.children.each { project ->
+  project.buildFileName = "build.gradle"
+  assert project.projectDir.isDirectory()
+  assert project.buildFile.exists()
+  assert project.buildFile.isFile()
+}

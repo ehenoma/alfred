@@ -1,0 +1,9 @@
+packageName: net.manukagames.alfred.schema.example
+recipient:
+  type: Test
+  supportClass: net.manukagames.alfred.schema.TestRecipientSupport
+messages:
+  greeting:
+    context:
+      receiver: $Recipient
+      senderName: String
