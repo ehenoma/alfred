@@ -22,13 +22,13 @@ public final class LanguageTable {
   }
 
   public Optional<Language> findById(int id) {
-    return id >= languages.length
+    return id < 0 || id >= languages.length
       ? Optional.empty()
       : Optional.ofNullable(languages[id]);
   }
 
   public Language findByIdOrFallback(int id, Language fallback) {
-    if (id >= languages.length) {
+    if (id < 0 || id >= languages.length) {
       return fallback;
     }
     Language language = languages[id];
@@ -46,7 +46,26 @@ public final class LanguageTable {
   public static LanguageTable of(Language... languages) {
     Objects.requireNonNull(languages);
     Map<String, Language> lookupTable = populateLookupTable(languages);
-    return new LanguageTable(lookupTable, languages.clone());
+    return new LanguageTable(lookupTable, fixArray(languages));
+  }
+
+  private static Language[] fixArray(Language[] languages) {
+    int highestId = findHighestId(languages);
+    Language[] fixed = new Language[highestId + 1];
+    for (Language language : languages) {
+      fixed[language.id()] = language;
+    }
+    return fixed;
+  }
+
+  private static int findHighestId(Language[] languages) {
+    int highestId = 0;
+    for (Language language : languages) {
+      if (language.id() > highestId) {
+        highestId = language.id();
+      }
+    }
+    return highestId;
   }
 
   private static Map<String, Language> populateLookupTable(Language[] languages) {
@@ -71,7 +90,7 @@ public final class LanguageTable {
   }
 
   public static final class Builder {
-    private Collection<Language> languages = new ArrayList<>();
+    private final Collection<Language> languages = new ArrayList<>();
     private int idSeed;
 
     private Builder() {}

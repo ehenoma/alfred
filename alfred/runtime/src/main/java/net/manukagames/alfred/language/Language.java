@@ -44,7 +44,7 @@ public final class Language {
 
   @Override
   public String toString() {
-    return String.format("Language{id: %d, name: %s, locale: %s }",
+    return String.format("Language{id: %d, name: %s, locale: %s}",
       id, name, locale);
   }
 
