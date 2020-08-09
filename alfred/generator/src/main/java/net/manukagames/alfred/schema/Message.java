@@ -68,6 +68,12 @@ public final class Message {
   }
 
   public static final class Variable {
+    public static Variable create(String name, String type) {
+      Objects.requireNonNull(name);
+      Objects.requireNonNull(type);
+      return new Variable(name, type);
+    }
+
     private final String name;
     private final String type;
 
@@ -96,12 +102,6 @@ public final class Message {
     public String toString() {
       return String.format("Variable{name: %s, type: %s}", name, type);
     }
-
-    public static Variable create(String name, String type) {
-      Objects.requireNonNull(name);
-      Objects.requireNonNull(type);
-      return new Variable(name, type);
-    }
   }
 
   public static Builder newBuilder() {
@@ -110,7 +110,7 @@ public final class Message {
 
   public static final class Builder {
     private String name;
-    private String description;
+    private String description = "";
     private Collection<Variable> context = new ArrayList<>();
 
     private Builder() {}

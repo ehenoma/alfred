@@ -1,12 +1,11 @@
 plugins {
   id 'java'
-  id "org.mikeneck.graalvm-native-image" version "0.3.0"
 }
 
 group 'net.manukagames.alfred'
 version '0.1.0'
 
-sourceCompatibility = 1.11
+sourceCompatibility = 1.14
 
 repositories {
   mavenCentral()
@@ -14,32 +13,14 @@ repositories {
 
 dependencies {
   compile 'com.squareup:javapoet:1.12.1'
-  compile 'info.picocli:picocli:4.2.0'
   compile 'com.fasterxml.jackson.core:jackson-core:2.10.3'
   compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.9.8'
   compile 'com.google.inject:guice:4.2.3'
   compile project(':alfred:runtime')
-  annotationProcessor 'info.picocli:picocli-codegen:4.2.0'
   testImplementation 'org.junit.jupiter:junit-jupiter:5.5.2'
 }
 
 test {
   useJUnitPlatform()
-}
-
-compileJava {
-  options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
-}
-
-nativeImage {
-  setGraalVmHome(System.getProperty("java.home"))
-  setMainClass('net.manukagames.alfred.App')
-  setExecutableName('alfred')
-  arguments(
-    "--no-fallback",
-    "--enable-all-security-services",
-    "--initialize-at-run-time=com.net.manukagames.alfred.schema.example.runtime",
-    "--report-unsupported-elements-at-runtime"
-  )
 }
 

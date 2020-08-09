@@ -5,6 +5,7 @@ include 'alfred:generator'
 include 'alfred:gradle-plugin'
 include 'alfred:example'
 include 'alfred:runtime'
+include 'alfred:command'
 
 rootProject.children.each { project ->
   project.buildFileName = "build.gradle"

@@ -1,5 +1,7 @@
 package net.manukagames.alfred.bundle;
 
+import com.google.errorprone.annotations.Var;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -14,9 +16,9 @@ final class CombinedMessagePreprocessor implements MessagePreprocessor {
   }
 
   @Override
-  public String process(String message) {
+  public String process(String key, @Var String message) {
     for (var preprocessor : preprocessors) {
-      message = preprocessor.process(message);
+      message = preprocessor.process(key, message);
     }
     return message;
   }

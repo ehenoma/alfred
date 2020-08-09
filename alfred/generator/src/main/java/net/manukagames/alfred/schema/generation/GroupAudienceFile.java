@@ -20,13 +20,22 @@ import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.schema.Message;
 
 public final class GroupAudienceFile extends AbstractAudienceFile {
-  private static final String NAME = "GroupAudience";
+  public static TypeName createTypeName(Generation generation) {
+    return ClassName.get(generation.schema().packageName(), NAME);
+  }
+
+  public static GroupAudienceFile create(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new GroupAudienceFile(generation);
+  }
 
   private final TypeName recipientUtilType;
   private final TypeName bundleType;
   private final TypeName recipientType;
   private final TypeName bundlesType;
   private final TypeName iterableRecipientType;
+
+  private static final String NAME = "GroupAudience";
 
   private GroupAudienceFile(Generation generation) {
     super(NAME, generation);
@@ -114,14 +123,5 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
     return variable.hasRecipientType()
        ? LOCAL_RECIPIENT_FIELD
       : variable.name();
-  }
-
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static GroupAudienceFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new GroupAudienceFile(generation);
   }
 }

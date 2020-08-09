@@ -8,6 +8,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -17,6 +18,14 @@ import net.manukagames.alfred.generation.RecipientSupport;
 import net.manukagames.alfred.schema.Schema;
 
 public final class SchemaGeneration {
+  public static SchemaGeneration of(Schema schema, Path outputDirectory) {
+    return new SchemaGeneration(
+      Guice.createInjector(),
+      schema,
+      outputDirectory
+    );
+  }
+
   private final Schema schema;
   private final Injector injector;
   private final Path outputDirectory;
@@ -31,6 +40,17 @@ public final class SchemaGeneration {
     this.outputDirectory = outputDirectory;
   }
 
+  private void writeFiles(Path targetDirectory, Iterable<GeneratedFile> files) {
+    try {
+      ensureTargetDirectoryExists(targetDirectory);
+      for (var file : files) {
+        file.writeToDirectory(targetDirectory);
+      }
+    } catch (IOException failedWrite) {
+      throw new RuntimeException("could not write generated file", failedWrite);
+    }
+  }
+
   public void run() {
     var targetDirectory = createTargetDirectory();
     var generation = createGeneration(targetDirectory);
@@ -38,28 +58,10 @@ public final class SchemaGeneration {
     writeFiles(targetDirectory, generatedFiles);
   }
 
-  private void writeFiles(Path targetDirectory, Iterable<GeneratedFile> files) {
-    try {
-      ensureTargetDirectoryExists(targetDirectory);
-      for (var file : files) {
-        writeToTarget(targetDirectory, file);
-      }
-    } catch (IOException failedWrite) {
-      throw new RuntimeException("could not write generated file", failedWrite);
-    }
-  }
-
   private void ensureTargetDirectoryExists(Path directory) throws IOException {
     if (Files.notExists(directory)) {
       Files.createDirectories(directory);
     }
-  }
-
-  private void writeToTarget(Path targetDirectory, GeneratedFile file) throws IOException {
-    var filePath = targetDirectory.resolve(file.name());
-    Files.deleteIfExists(filePath);
-    Files.writeString(filePath, file.asModel().toString(),
-      StandardOpenOption.CREATE, StandardOpenOption.WRITE);
   }
 
   private Collection<GeneratedFile> listGeneratedFiles(Generation generation) {
@@ -74,7 +76,7 @@ public final class SchemaGeneration {
     );
   }
 
-  private Generation createGeneration(Path targetDirectory) {
+  public Generation createGeneration(Path targetDirectory) {
     return Generation.newBuilder()
       .withSchema(schema)
       .withRecipientSupport(findRecipientSupport())
@@ -107,13 +109,5 @@ public final class SchemaGeneration {
       throw new IllegalStateException(error);
     }
     return (RecipientSupport) instance;
-  }
-
-  public static SchemaGeneration of(Schema schema, Path outputDirectory) {
-    return new SchemaGeneration(
-      Guice.createInjector(),
-      schema,
-      outputDirectory
-    );
   }
 }

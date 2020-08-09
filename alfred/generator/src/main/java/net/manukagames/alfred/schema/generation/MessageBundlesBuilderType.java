@@ -9,6 +9,11 @@ import javax.lang.model.element.Modifier;
 import java.util.*;
 
 final class MessageBundlesBuilderType {
+  public static TypeSpec createType(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new MessageBundlesBuilderType(generation).createType();
+  }
+
   private final Generation generation;
   private final TypeName bundleType;
 
@@ -127,10 +132,5 @@ final class MessageBundlesBuilderType {
       .endControlFlow()
       .addStatement("return packed")
       .build();
-  }
-
-  public static TypeSpec createType(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new MessageBundlesBuilderType(generation).createType();
   }
 }

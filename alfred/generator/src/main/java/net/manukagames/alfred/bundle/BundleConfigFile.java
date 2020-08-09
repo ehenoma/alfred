@@ -4,15 +4,27 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import com.google.common.annotations.VisibleForTesting;
 import net.manukagames.alfred.schema.SchemaFile;
 import net.manukagames.alfred.schema.YamlReaders;
 import org.yaml.snakeyaml.Yaml;
 
 public final class BundleConfigFile {
+  public static BundleConfigFile of(File file) {
+    Objects.requireNonNull(file);
+    return new BundleConfigFile(file.toPath());
+  }
+
+  public static BundleConfigFile at(Path path) {
+    Objects.requireNonNull(path);
+    return new BundleConfigFile(path);
+  }
+
   private final Path path;
 
   private BundleConfigFile(Path path) {
@@ -39,16 +51,6 @@ public final class BundleConfigFile {
     }
   }
 
-  public static BundleConfigFile of(File file) {
-    Objects.requireNonNull(file);
-    return new BundleConfigFile(file.toPath());
-  }
-
-  public static BundleConfigFile at(Path path) {
-    Objects.requireNonNull(path);
-    return new BundleConfigFile(path);
-  }
-
   public static final class Reading {
     private final Map<?, ?> topLevelProperties;
     private final BundleConfig.Builder config = BundleConfig.newBuilder();
@@ -58,10 +60,9 @@ public final class BundleConfigFile {
     }
 
     public BundleConfig read() {
-      Map<?, ?> messageProperties = YamlReaders.require(
-        "messages", topLevelProperties);
       readLocale();
-      readMessages(messageProperties);
+      readMessages();
+      readPreprocessors();
       return config.create();
     }
 
@@ -71,13 +72,31 @@ public final class BundleConfigFile {
       config.withLocale(locale);
     }
 
-    private void readMessages(Map<?, ?> properties) {
-      for (var entry : properties.entrySet()) {
+    private void readMessages() {
+      Map<?, ?> messageProperties = YamlReaders.require(
+        "messages", topLevelProperties);
+      for (var entry : messageProperties.entrySet()) {
         config.addMessage(
           entry.getKey().toString(),
           entry.getValue().toString()
         );
       }
+    }
+
+    private void readPreprocessors() {
+      if (!topLevelProperties.containsKey("preprocessors")) {
+        return;
+      }
+      Collection<?> classes = YamlReaders.require("preprocessors", topLevelProperties);
+      for (Object className : classes) {
+        config.addPreprocessor(className.toString());
+      }
+    }
+
+    @VisibleForTesting
+    public static Reading withTopLevelProperties(Map<?, ?> properties) {
+      Objects.requireNonNull(properties);
+      return new Reading(properties);
     }
   }
 }

@@ -1,17 +1,30 @@
 package net.manukagames.alfred.schema.generation;
 
+import java.util.Objects;
+
 import javax.lang.model.element.Modifier;
 
-import com.squareup.javapoet.*;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import net.manukagames.alfred.generation.AbstractCachedGeneratedFile;
 import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.language.LanguageTable;
 
-import java.util.Objects;
-
 public final class RecipientUtilFile extends AbstractCachedGeneratedFile {
+  static TypeName createTypeName(Generation generation) {
+    return ClassName.get(generation.schema().packageName(), NAME);
+  }
+
+  public static RecipientUtilFile create(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new RecipientUtilFile(generation);
+  }
+
   private static final String NAME = "Recipients";
 
   private final ParameterSpec recipientParameter;
@@ -62,14 +75,5 @@ public final class RecipientUtilFile extends AbstractCachedGeneratedFile {
       .addParameter(LANGUAGES_PARAMETER)
       .addCode(code)
       .build();
-  }
-
-  static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static RecipientUtilFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new RecipientUtilFile(generation);
   }
 }

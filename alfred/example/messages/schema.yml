@@ -1,9 +1,0 @@
-packageName: net.manukagames.greeting.message
-recipient:
-  type: ConsoleRecipient
-  supportClass: net.manukagames.greeting.message.ConsoleRecipientSupport
-messages:
-  greeting:
-    context:
-      _receiver: $Receiver
-      senderName: String

@@ -1,0 +1,34 @@
+plugins {
+  id 'java'
+  id "org.mikeneck.graalvm-native-image" version "0.3.0"
+}
+
+group 'net.manukagames.alfred'
+version '0.1.0'
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  compile project(':alfred:generator')
+  compile 'info.picocli:picocli:4.2.0'
+  annotationProcessor 'info.picocli:picocli-codegen:4.2.0'
+}
+
+compileJava {
+  options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+nativeImage {
+  setGraalVmHome(System.getProperty("java.home"))
+  setMainClass('net.manukagames.alfred.App')
+  setExecutableName('alfred')
+  arguments(
+    "--no-fallback",
+    "--enable-all-security-services",
+    "--initialize-at-run-time=com.net.manukagames.alfred.schema.example.runtime",
+    "--report-unsupported-elements-at-runtime"
+  )
+}

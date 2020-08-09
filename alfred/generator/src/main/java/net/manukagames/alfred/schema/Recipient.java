@@ -3,6 +3,12 @@ package net.manukagames.alfred.schema;
 import java.util.Objects;
 
 public final class Recipient {
+  public static Recipient create(String type, String supportClass) {
+    Objects.requireNonNull(type);
+    Objects.requireNonNull(supportClass);
+    return new Recipient(type, supportClass);
+  }
+
   public static final String MESSAGE_VARIABLE_TYPE_NAME = "$Recipient";
 
   private final String type;
@@ -28,11 +34,5 @@ public final class Recipient {
       type,
       supportClass
     );
-  }
-
-  public static Recipient create(String type, String supportClass) {
-    Objects.requireNonNull(type);
-    Objects.requireNonNull(supportClass);
-    return new Recipient(type, supportClass);
   }
 }

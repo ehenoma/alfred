@@ -6,7 +6,7 @@ public final class App {
   private App() {}
 
   public static void main(String[] options) {
-    CommandLine commandLine = new CommandLine(new PolyglotCommand());
+    CommandLine commandLine = new CommandLine(new AlfredCommand());
     int exitCode = commandLine.execute(options);
     System.exit(exitCode);
   }

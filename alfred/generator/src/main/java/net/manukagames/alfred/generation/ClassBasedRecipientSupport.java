@@ -35,13 +35,18 @@ public abstract class ClassBasedRecipientSupport implements RecipientSupport {
 
     @Override
     public String createForField(String name) {
-      return "get" + capitalize(name);
+      return "get" + capitalize(name) + "()";
     }
 
     private static String capitalize(String value) {
-      if (value.length() <= 1) {
-        return "";
-      }
+      return switch (value.length()) {
+        case 0 -> "";
+        case 1 -> value.toUpperCase();
+        default -> capitalizeNonEmpty(value);
+      };
+    }
+
+    private static String capitalizeNonEmpty(String value) {
       var tail = value.substring(1);
       var head = Character.toUpperCase(value.charAt(0));
       return head + tail;

@@ -1,9 +1,9 @@
 package net.manukagames.alfred.generation;
 
-import net.manukagames.alfred.schema.Schema;
-
 import java.nio.file.Path;
 import java.util.Objects;
+
+import net.manukagames.alfred.schema.Schema;
 
 public class Generation {
   private final Schema schema;

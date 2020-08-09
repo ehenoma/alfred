@@ -12,7 +12,20 @@ import java.util.Objects;
 
 import org.yaml.snakeyaml.Yaml;
 
+import javax.annotation.Nullable;
+
 public final class SchemaFile {
+  public static SchemaFile of(File file) {
+    Objects.requireNonNull(file);
+    return new SchemaFile(file.toPath());
+  }
+
+  public static SchemaFile at(Path path) {
+    Objects.requireNonNull(path);
+    return new SchemaFile(path);
+  }
+
+
   private final Path path;
 
   private SchemaFile(Path path) {
@@ -39,24 +52,14 @@ public final class SchemaFile {
     }
   }
 
-  public static SchemaFile of(File file) {
-    Objects.requireNonNull(file);
-    return new SchemaFile(file.toPath());
-  }
-
-  public static SchemaFile at(Path path) {
-    Objects.requireNonNull(path);
-    return new SchemaFile(path);
-  }
-
   public static final class InvalidFormatException extends RuntimeException {
-    private InvalidFormatException(String message) {
-      super(message);
-    }
-
     static InvalidFormatException withMessage(String message) {
       Objects.requireNonNull(message);
       return new InvalidFormatException(message);
+    }
+
+    private InvalidFormatException(String message) {
+      super(message);
     }
   }
 
@@ -94,12 +97,14 @@ public final class SchemaFile {
       return messages;
     }
 
-    private Message readMessage(String name, Map<?, ?> properties) {
+    private Message readMessage(String name, @Nullable Map<?, ?> properties) {
       var message = Message.newBuilder();
       message.withName(name);
-      var foundDescription = properties.get("description");
-      message.withDescription(YamlReaders.convertToStringOrEmpty(foundDescription));
-      message.withContext(maybeReadContext(properties));
+      if (properties != null) {
+        var foundDescription = properties.get("description");
+        message.withDescription(YamlReaders.convertToStringOrEmpty(foundDescription));
+        message.withContext(maybeReadContext(properties));
+      }
       return message.create();
     }
 

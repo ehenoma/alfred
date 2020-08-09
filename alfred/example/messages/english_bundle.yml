@@ -1,6 +1,0 @@
-locale: en_US
-inherit: english_us_bundle.yml
-aliases:
-  - &prefix: '&4Bundle'
-messages:
-  greeting: *prefix Greetings from $user.name

@@ -1,8 +1,12 @@
 package net.manukagames.alfred;
 
+import net.manukagames.alfred.schema.Schema;
+import net.manukagames.alfred.schema.SchemaFile;
+import net.manukagames.alfred.schema.generation.SchemaGeneration;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
@@ -29,7 +33,21 @@ final class BuildSchemaCommand implements Callable<Integer> {
   File schemaFile;
 
   @Override
-  public Integer call() throws Exception {
+  public Integer call() {
+    SchemaGeneration generation = SchemaGeneration.of(
+      readSchema(),
+      outputDirectory.toPath()
+    );
+    generation.run();
     return 0;
+  }
+
+  private Schema readSchema() {
+    var file = SchemaFile.of(schemaFile);
+    try {
+      return file.read();
+    } catch (IOException exception) {
+      throw new RuntimeException("failed to read schema", exception);
+    }
   }
 }

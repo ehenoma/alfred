@@ -20,6 +20,15 @@ import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.schema.Message;
 
 public final class SoloAudienceFile extends AbstractAudienceFile {
+  public static TypeName createTypeName(Generation generation) {
+    return ClassName.get(generation.schema().packageName(), NAME);
+  }
+
+  public static SoloAudienceFile create(Generation generation) {
+    Preconditions.checkNotNull(generation);
+    return new SoloAudienceFile(generation);
+  }
+
   private static final String NAME = "SoloAudience";
 
   private final TypeName recipientType;
@@ -114,14 +123,5 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
     code.addStatement("this.bundle = bundles.find(language)");
     code.addStatement("this.recipient = recipient");
     return code.build();
-  }
-
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static SoloAudienceFile create(Generation generation) {
-    Preconditions.checkNotNull(generation);
-    return new SoloAudienceFile(generation);
   }
 }

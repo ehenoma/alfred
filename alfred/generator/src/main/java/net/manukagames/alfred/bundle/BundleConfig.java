@@ -1,5 +1,7 @@
 package net.manukagames.alfred.bundle;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -48,11 +50,13 @@ public final class BundleConfig {
 
     private Builder() { }
 
+    @CanIgnoreReturnValue
     public Builder withLocale(Locale locale) {
       this.locale = locale;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addMessage(String key, String value) {
       Objects.requireNonNull(key);
       Objects.requireNonNull(value);
@@ -60,6 +64,7 @@ public final class BundleConfig {
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addPreprocessor(String preprocessorClass) {
       Objects.requireNonNull(preprocessorClass);
       preprocessors.add(preprocessorClass);
@@ -75,5 +80,4 @@ public final class BundleConfig {
       );
     }
   }
-
 }

@@ -1,0 +1,4 @@
+locale: en
+messages:
+  greeting: Hey, $receiver.name. Greeting from $senderName!
+  goodbye: Bye

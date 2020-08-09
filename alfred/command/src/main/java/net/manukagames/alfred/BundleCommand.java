@@ -5,6 +5,9 @@ import picocli.CommandLine;
 @CommandLine.Command(
   name = "schema",
   mixinStandardHelpOptions = true,
-  subcommands = BuildSchemaCommand.class
+  subcommands = {
+    BuildBundleCommand.class
+  }
 )
-public final class SchemaCommand {}
+public class BundleCommand {
+}

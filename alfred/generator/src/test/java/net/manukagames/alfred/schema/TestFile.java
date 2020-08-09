@@ -6,20 +6,31 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Objects;
 
+import net.manukagames.alfred.bundle.BundleConfig;
+import net.manukagames.alfred.bundle.BundleConfigFile;
 import org.yaml.snakeyaml.Yaml;
 
-public final class TestSchemaFile {
+public final class TestFile {
   private final String name;
 
-  private TestSchemaFile(String name) {
+  private TestFile(String name) {
     this.name = name;
   }
 
-  public Schema read() {
-    var yaml = new Yaml();
-    var properties = (Map<?, ?>) yaml.load(readFileContents());
-    var reading = new SchemaFile.Reading(properties);
+  public Schema readSchema() {
+    var properties = readTopLevelProperties();
+    return new SchemaFile.Reading(properties).read();
+  }
+
+  public BundleConfig readBundle() {
+    var properties = readTopLevelProperties();
+    var reading = BundleConfigFile.Reading.withTopLevelProperties(properties);
     return reading.read();
+  }
+
+  private Map<?, ?> readTopLevelProperties() {
+    var yaml = new Yaml();
+    return (Map<?, ?>) yaml.load(readFileContents());
   }
 
   private String readFileContents() {
@@ -33,8 +44,8 @@ public final class TestSchemaFile {
     }
   }
 
-  public static TestSchemaFile named(String name) {
+  public static TestFile named(String name) {
     Objects.requireNonNull(name);
-    return new TestSchemaFile(name);
+    return new TestFile(name);
   }
 }

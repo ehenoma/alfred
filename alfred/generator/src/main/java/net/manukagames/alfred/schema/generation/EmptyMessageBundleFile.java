@@ -13,6 +13,11 @@ import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.schema.Message;
 
 final class EmptyMessageBundleFile extends AbstractMessageBundleFile {
+  public static EmptyMessageBundleFile create(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new EmptyMessageBundleFile(generation);
+  }
+
   private static final String NAME = "EmptyMessageBundle";
 
   private EmptyMessageBundleFile(Generation generation) {
@@ -37,10 +42,5 @@ final class EmptyMessageBundleFile extends AbstractMessageBundleFile {
 
   public static TypeName createTypeName(Generation generation) {
     return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static EmptyMessageBundleFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new EmptyMessageBundleFile(generation);
   }
 }

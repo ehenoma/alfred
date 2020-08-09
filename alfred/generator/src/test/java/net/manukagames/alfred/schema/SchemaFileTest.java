@@ -7,7 +7,7 @@ final class SchemaFileTest {
   @Test
   @Tag("integration")
   void testParsingExampleFile() {
-    var exampleFile = TestSchemaFile.named("example_messages.yml");
-    exampleFile.read();
+    var exampleFile = TestFile.named("example_messages.yml");
+    exampleFile.readSchema();
   }
 }

@@ -3,6 +3,10 @@ package net.manukagames.alfred.schema;
 import java.util.Map;
 
 public final class YamlReaders {
+  public static String convertToStringOrEmpty(Object value) {
+    return value == null ? "" : value.toString();
+  }
+
   private YamlReaders() {}
 
   public static <ValueT> ValueT require(
@@ -28,9 +32,5 @@ public final class YamlReaders {
       );
       throw SchemaFile.InvalidFormatException.withMessage(error);
     }
-  }
-
-  public static String convertToStringOrEmpty(Object value) {
-    return value == null ? "" : value.toString();
   }
 }

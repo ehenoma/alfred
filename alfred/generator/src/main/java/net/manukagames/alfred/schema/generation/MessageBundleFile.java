@@ -13,6 +13,15 @@ import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.schema.Message;
 
 public final class MessageBundleFile extends AbstractMessageBundleFile {
+  public static TypeName createTypeName(Generation generation) {
+    return ClassName.get(generation.schema().packageName(), NAME);
+  }
+
+  public static MessageBundleFile create(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new MessageBundleFile(generation);
+  }
+
   private static final String NAME = "MessageBundle";
 
   private MessageBundleFile(Generation generation) {
@@ -32,14 +41,5 @@ public final class MessageBundleFile extends AbstractMessageBundleFile {
     return createFactoryMethodBuilder(message)
       .addModifiers(Modifier.ABSTRACT)
       .build();
-  }
-
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static MessageBundleFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new MessageBundleFile(generation);
   }
 }

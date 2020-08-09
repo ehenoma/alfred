@@ -5,4 +5,4 @@ import picocli.CommandLine;
 @CommandLine.Command(
   subcommands = SchemaCommand.class
 )
-public final class PolyglotCommand { }
+public final class AlfredCommand { }

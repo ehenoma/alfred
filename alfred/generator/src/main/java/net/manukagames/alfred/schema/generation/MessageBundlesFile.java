@@ -23,12 +23,21 @@ import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.language.LanguageTable;
 
 public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
-  private static final String NAME = "MessageBundles";
+  public static TypeName createTypeName(Generation generation) {
+    return ClassName.get(generation.schema().packageName(), NAME);
+  }
+
+  public static MessageBundlesFile create(Generation generation) {
+    Objects.requireNonNull(generation);
+    return new MessageBundlesFile(generation);
+  }
 
   private final TypeName groupAudienceType;
   private final TypeName soloAudienceType;
   private final TypeName bundleArrayType;
   private final TypeName bundleType;
+
+  private static final String NAME = "MessageBundles";
 
   private MessageBundlesFile(Generation generation) {
     super(NAME, generation);
@@ -192,14 +201,5 @@ public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
       .addStatement("return new Builder()")
       .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
       .build();
-  }
-
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
-  }
-
-  public static MessageBundlesFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new MessageBundlesFile(generation);
   }
 }

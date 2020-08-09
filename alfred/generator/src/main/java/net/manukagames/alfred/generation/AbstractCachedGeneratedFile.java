@@ -1,10 +1,10 @@
 package net.manukagames.alfred.generation;
 
+import javax.lang.model.element.Modifier;
+
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-
-import javax.lang.model.element.Modifier;
 
 public abstract class AbstractCachedGeneratedFile implements GeneratedFile {
   protected final String name;
