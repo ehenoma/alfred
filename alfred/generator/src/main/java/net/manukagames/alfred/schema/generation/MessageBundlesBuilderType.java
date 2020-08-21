@@ -1,25 +1,25 @@
 package net.manukagames.alfred.schema.generation;
 
 import com.squareup.javapoet.*;
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.language.LanguageTable;
+import net.manukagames.alfred.schema.Schema;
 
 import javax.lang.model.element.Modifier;
 import java.util.*;
 
 final class MessageBundlesBuilderType {
-  public static TypeSpec createType(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new MessageBundlesBuilderType(generation).createType();
+  public static TypeSpec createType(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new MessageBundlesBuilderType(schema).createType();
   }
 
-  private final Generation generation;
+  private final Schema schema;
   private final TypeName bundleType;
 
-  private MessageBundlesBuilderType(Generation generation) {
-    this.generation = generation;
-    this.bundleType = MessageBundleFile.createTypeName(generation);
+  private MessageBundlesBuilderType(Schema schema) {
+    this.schema = schema;
+    this.bundleType = BundleInterfaceFile.createTypeName(schema);
   }
 
   public TypeSpec createType() {
@@ -110,7 +110,7 @@ final class MessageBundlesBuilderType {
   }
 
   private MethodSpec createBuildMethod() {
-    var bundlesType = MessageBundlesFile.createTypeName(generation);
+    var bundlesType = BundleRepositoryFile.createTypeName(schema);
     return MethodSpec.methodBuilder("create")
       .addModifiers(Modifier.PUBLIC)
       .returns(bundlesType)
@@ -120,7 +120,7 @@ final class MessageBundlesBuilderType {
   }
 
   private MethodSpec createPackMethod() {
-    var emptyBundleType = EmptyMessageBundleFile.createTypeName(generation);
+    var emptyBundleType = EmptyMessageBundleFile.createTypeName(schema);
     return MethodSpec.methodBuilder("pack")
       .addModifiers(Modifier.PRIVATE)
       .returns(ArrayTypeName.of(bundleType))

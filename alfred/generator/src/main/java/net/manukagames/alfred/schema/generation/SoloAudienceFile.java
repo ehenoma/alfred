@@ -14,19 +14,18 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.schema.Message;
+import net.manukagames.alfred.schema.Schema;
 
 public final class SoloAudienceFile extends AbstractAudienceFile {
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
+  public static TypeName createTypeName(Schema schema) {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
-  public static SoloAudienceFile create(Generation generation) {
-    Preconditions.checkNotNull(generation);
-    return new SoloAudienceFile(generation);
+  public static SoloAudienceFile fromSchema(Schema schema) {
+    Preconditions.checkNotNull(schema);
+    return new SoloAudienceFile(schema);
   }
 
   private static final String NAME = "SoloAudience";
@@ -35,11 +34,16 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
   private final TypeName recipientUtilType;
   private final TypeName messageBundleType;
 
-  private SoloAudienceFile(Generation generation) {
-    super(NAME, generation);
-    this.recipientType = generation.recipientSupport().createTypeName();
-    this.messageBundleType = MessageBundleFile.createTypeName(generation);
-    this.recipientUtilType = RecipientUtilFile.createTypeName(generation);
+  private SoloAudienceFile(Schema schema) {
+    super(schema);
+    this.recipientType = schema.framework().createRecipientTypeName();
+    this.messageBundleType = BundleInterfaceFile.createTypeName(schema);
+    this.recipientUtilType = RecipientUtilFile.createTypeName(schema);
+  }
+
+  @Override
+  public ClassName name() {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
   @Override
@@ -72,7 +76,7 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
   }
 
   private ClassName createBundlesType() {
-    return ClassName.get(generation.schema().packageName(), "MessageBundles");
+    return ClassName.get(schema.packageName(), "Bundles");
   }
 
   @Override

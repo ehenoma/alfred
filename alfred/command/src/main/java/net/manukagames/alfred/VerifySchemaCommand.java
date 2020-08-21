@@ -1,6 +1,7 @@
 package net.manukagames.alfred;
 
-import net.manukagames.alfred.schema.SchemaFile;
+import com.google.inject.Guice;
+import net.manukagames.alfred.schema.SchemaConfiguration;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -36,9 +37,9 @@ final class VerifySchemaCommand implements Callable<Integer> {
   }
 
   private void readSchema() {
-    var file = SchemaFile.of(schemaFile);
+    var file = SchemaConfiguration.of(schemaFile);
     try {
-      file.read();
+      file.read(Guice.createInjector());
     } catch (IOException exception) {
       throw new RuntimeException("failed to read schema", exception);
     }

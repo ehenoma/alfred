@@ -6,18 +6,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
+import net.manukagames.alfred.generation.Framework;
+
 public final class Schema {
   private final String packageName;
-  private final Recipient recipient;
+  private final Framework framework;
   private final Collection<Message> messages;
 
   private Schema(
     String packageName,
-    Recipient recipient,
+    Framework framework,
     Collection<Message> messages
   ) {
     this.packageName = packageName;
-    this.recipient = recipient;
+    this.framework = framework;
     this.messages = messages;
   }
 
@@ -25,12 +29,12 @@ public final class Schema {
     return messages;
   }
 
-  public String packageName() {
-    return packageName;
+  public Framework framework() {
+    return framework;
   }
 
-  public Recipient recipient() {
-    return recipient;
+  public String packageName() {
+    return packageName;
   }
 
   @Override
@@ -39,9 +43,9 @@ public final class Schema {
       .map(Objects::toString)
       .collect(Collectors.joining(", "));
     return String.format(
-      "Schema{package: %s, recipient: %s, messages: [%s]}",
+      "Schema{package: %s, framework: %s, messages: [%s]}",
       packageName,
-      recipient,
+      framework,
       messagesFormatted
     );
   }
@@ -52,16 +56,18 @@ public final class Schema {
 
   public static final class Builder {
     private String packageName;
-    private Recipient recipient;
+    private Framework framework;
     private Collection<Message> messages = new ArrayList<>();
 
     private Builder() {}
 
+    @CanIgnoreReturnValue
     public Builder withPackageName(String name) {
       this.packageName = name;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder withMessages(Collection<Message> messages) {
       Objects.requireNonNull(messages);
       messages.forEach(Objects::requireNonNull);
@@ -69,21 +75,23 @@ public final class Schema {
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder addMessage(Message message) {
       Objects.requireNonNull(message);
       messages.add(message);
       return this;
     }
 
-    public Builder withRecipient(Recipient recipient) {
-      this.recipient = recipient;
+    @CanIgnoreReturnValue
+    public Builder withFramework(Framework framework) {
+      this.framework = framework;
       return this;
     }
 
     public Schema create() {
       Objects.requireNonNull(packageName);
-      Objects.requireNonNull(recipient);
-      return new Schema(packageName, recipient, List.copyOf(messages));
+      Objects.requireNonNull(framework);
+      return new Schema(packageName, framework, List.copyOf(messages));
     }
   }
 }

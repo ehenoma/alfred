@@ -1,36 +1,37 @@
 package net.manukagames.alfred.schema.generation;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
+import javax.lang.model.element.Modifier;
+
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 
 import net.manukagames.alfred.generation.AbstractCachedGeneratedFile;
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.schema.Message;
+import net.manukagames.alfred.schema.Schema;
 
-import javax.lang.model.element.Modifier;
-import java.util.Collection;
-import java.util.stream.Collectors;
-
-public abstract class AbstractMessageBundleFile extends AbstractCachedGeneratedFile {
+public abstract class AbstractBundleFile extends AbstractCachedGeneratedFile {
   private final TypeName recipientType;
+  protected final Schema schema;
 
-  protected AbstractMessageBundleFile(String name, Generation generation) {
-    super(name, generation);
-    this.recipientType = generation.recipientSupport().createTypeName();
+  protected AbstractBundleFile(Schema schema) {
+    this.schema = schema;
+    this.recipientType = schema.framework().createRecipientTypeName();
   }
 
-  protected Collection<MethodSpec> createFactoryMethods() {
-    var messages = generation.schema().listMessages();
-    return messages.stream()
-      .map(this::createFactoryMethod)
+  protected Collection<MethodSpec> createFormatMethods() {
+    return schema.listMessages().stream()
+      .map(this::createFormatMethod)
       .collect(Collectors.toList());
   }
 
-  protected abstract MethodSpec createFactoryMethod(Message message);
+  protected abstract MethodSpec createFormatMethod(Message message);
 
-  protected MethodSpec.Builder createFactoryMethodBuilder(Message message) {
+  protected MethodSpec.Builder createFormatterSignature(Message message) {
     return MethodSpec.methodBuilder(message.createFactoryMethodName())
       .addModifiers(Modifier.PUBLIC)
       .returns(ClassName.get(String.class))

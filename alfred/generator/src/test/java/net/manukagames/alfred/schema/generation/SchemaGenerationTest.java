@@ -1,9 +1,5 @@
 package net.manukagames.alfred.schema.generation;
 
-import com.google.inject.Guice;
-
-import net.manukagames.alfred.bundle.BundleConfigFile;
-import net.manukagames.alfred.bundle.BundleGeneration;
 import net.manukagames.alfred.schema.TestFile;
 
 import org.junit.jupiter.api.Test;

@@ -18,33 +18,39 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import net.manukagames.alfred.generation.AbstractCachedGeneratedFile;
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.language.LanguageTable;
+import net.manukagames.alfred.schema.Schema;
 
-public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
+public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
+  public static TypeName createTypeName(Schema schema) {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
-  public static MessageBundlesFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new MessageBundlesFile(generation);
+  public static BundleRepositoryFile fromSchema(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new BundleRepositoryFile(schema);
   }
 
+  private final Schema schema;
   private final TypeName groupAudienceType;
   private final TypeName soloAudienceType;
   private final TypeName bundleArrayType;
   private final TypeName bundleType;
 
-  private static final String NAME = "MessageBundles";
+  private static final String NAME = "Bundles";
 
-  private MessageBundlesFile(Generation generation) {
-    super(NAME, generation);
-    this.groupAudienceType = GroupAudienceFile.createTypeName(generation);
-    this.soloAudienceType = SoloAudienceFile.createTypeName(generation);
-    this.bundleType = MessageBundleFile.createTypeName(generation);
+  private BundleRepositoryFile(Schema schema) {
+    this.schema = schema;
+    this.groupAudienceType = GroupAudienceFile.createTypeName(schema);
+    this.soloAudienceType = SoloAudienceFile.createTypeName(schema);
+    this.bundleType = BundleInterfaceFile.createTypeName(schema);
     this.bundleArrayType = ArrayTypeName.of(bundleType);
+  }
+
+  @Override
+  public ClassName name() {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
   @Override
@@ -55,7 +61,7 @@ public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
       .addMethod(createConstructor())
       .addMethods(createMethods())
       .addMethod(createBuilderFactory())
-      .addType(MessageBundlesBuilderType.createType(generation))
+      .addType(MessageBundlesBuilderType.createType(schema))
       .build();
   }
 
@@ -90,7 +96,7 @@ public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
   }
 
   private Collection<MethodSpec> createMethods() {
-    var recipientType = generation.recipientSupport().createTypeName();
+    var recipientType = schema.framework().createRecipientTypeName();
     var audienceType = createAudienceTypeName();
     return List.of(
       createSoloAudienceFactory(recipientType, audienceType),
@@ -104,7 +110,7 @@ public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
   }
 
   private TypeName createAudienceTypeName() {
-    return ClassName.get(generation.schema().packageName(), "Audience");
+    return ClassName.get(schema.packageName(), "Audience");
   }
 
   private MethodSpec createSoloAudienceFactory(
@@ -166,8 +172,8 @@ public final class MessageBundlesFile extends AbstractCachedGeneratedFile {
   }
 
   private MethodSpec createFindByRecipientMethod() {
-    var recipientType = generation.recipientSupport().createTypeName();
-    var utilType = RecipientUtilFile.createTypeName(generation);
+    var recipientType = schema.framework().createRecipientTypeName();
+    var utilType = RecipientUtilFile.createTypeName(schema);
     var parameter = ParameterSpec.builder(recipientType, "recipient").build();
     return MethodSpec.methodBuilder("forRecipient")
       .addModifiers(Modifier.PUBLIC)

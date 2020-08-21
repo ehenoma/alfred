@@ -10,35 +10,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.google.inject.Injector;
+import net.manukagames.alfred.generation.Framework;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.annotation.Nullable;
 
-public final class SchemaFile {
-  public static SchemaFile of(File file) {
+public final class SchemaConfiguration {
+  public static SchemaConfiguration of(File file) {
     Objects.requireNonNull(file);
-    return new SchemaFile(file.toPath());
+    return new SchemaConfiguration(file.toPath());
   }
 
-  public static SchemaFile at(Path path) {
+  public static SchemaConfiguration at(Path path) {
     Objects.requireNonNull(path);
-    return new SchemaFile(path);
+    return new SchemaConfiguration(path);
   }
-
 
   private final Path path;
 
-  private SchemaFile(Path path) {
+  private SchemaConfiguration(Path path) {
     this.path = path;
   }
 
-  public Schema read() throws IOException {
-    return read(new Yaml());
+  public Schema read(Injector injector) throws IOException {
+    return read(injector, new Yaml());
   }
 
-  public Schema read(Yaml parser) throws IOException{
+  public Schema read(Injector injector, Yaml parser) throws IOException{
     var topLevelProperties = parseTopLevel(parser);
-    var reading = new Reading(topLevelProperties);
+    var reading = new Reading(topLevelProperties, injector);
     try {
       return reading.read();
     } catch (InvalidFormatException invalidFormat) {
@@ -65,10 +66,12 @@ public final class SchemaFile {
 
   static final class Reading {
     private final Schema.Builder builder;
+    private final Injector injector;
     private final Map<?, ?> topLevelProperties;
 
-    Reading(Map<?, ?> topLevelProperties) {
+    Reading(Map<?, ?> topLevelProperties, Injector injector) {
       this.topLevelProperties = topLevelProperties;
+      this.injector = injector;
       this.builder = Schema.newBuilder();
     }
 
@@ -76,15 +79,14 @@ public final class SchemaFile {
       builder.withPackageName(YamlReaders.require("packageName", topLevelProperties));
       Map<?, ?> messagesProperties = YamlReaders.require("messages", topLevelProperties);
       builder.withMessages(readMessages(messagesProperties));
-      Map<?, ?> recipientProperties = YamlReaders.require("recipient", topLevelProperties);
-      builder.withRecipient(readRecipient(recipientProperties));
+      Map<?, ?> frameworkProperties = YamlReaders.require("framework", topLevelProperties);
+      builder.withFramework(readFramework(frameworkProperties));
       return builder.create();
     }
 
-    private Recipient readRecipient(Map<?, ?> properties) {
-      String type = YamlReaders.require("type", properties);
+    private Framework readFramework(Map<?, ?> properties) {
       String supportClass = YamlReaders.require("supportClass", properties);
-      return Recipient.create(type, supportClass);
+      return loadFramework(supportClass);
     }
 
     private Collection<Message> readMessages(Map<?, ?> properties) {
@@ -125,6 +127,24 @@ public final class SchemaFile {
         context.add(Message.Variable.create(name, type));
       }
       return context;
+    }
+
+    private Framework loadFramework(String typeName) {
+      try {
+        var resolvedClass = Class.forName(typeName);
+        return createFrameworkFromType(resolvedClass);
+      } catch (ClassNotFoundException invalidName) {
+        throw new IllegalStateException("could not find framework type", invalidName);
+      }
+    }
+
+    private Framework createFrameworkFromType(Class<?> type) {
+      var instance = injector.getInstance(type);
+      if (!(instance instanceof Framework)) {
+        var error = String.format("type %s is not a Framework", type.getSimpleName());
+        throw new IllegalStateException(error);
+      }
+      return (Framework) instance;
     }
   }
 }

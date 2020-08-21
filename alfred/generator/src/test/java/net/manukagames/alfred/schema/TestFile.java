@@ -6,8 +6,10 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Objects;
 
-import net.manukagames.alfred.bundle.BundleConfig;
-import net.manukagames.alfred.bundle.BundleConfigFile;
+import com.google.inject.Guice;
+import net.manukagames.alfred.bundle.Bundle;
+import net.manukagames.alfred.bundle.BundleConfiguration;
+import net.manukagames.alfred.bundle.BundleConfiguration.Reading;
 import org.yaml.snakeyaml.Yaml;
 
 public final class TestFile {
@@ -19,12 +21,13 @@ public final class TestFile {
 
   public Schema readSchema() {
     var properties = readTopLevelProperties();
-    return new SchemaFile.Reading(properties).read();
+    return new SchemaConfiguration.Reading(properties, Guice.createInjector()).read();
   }
 
-  public BundleConfig readBundle() {
+  public Bundle readBundle() {
     var properties = readTopLevelProperties();
-    var reading = BundleConfigFile.Reading.withTopLevelProperties(properties);
+    var reading =
+      Reading.withTopLevelProperties(properties, Guice.createInjector());
     return reading.read();
   }
 

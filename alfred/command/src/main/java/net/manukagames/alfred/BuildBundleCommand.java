@@ -1,22 +1,20 @@
 package net.manukagames.alfred;
 
 import com.google.inject.Guice;
-import net.manukagames.alfred.bundle.BundleConfig;
-import net.manukagames.alfred.bundle.BundleConfigFile;
+import com.google.inject.Injector;
+import net.manukagames.alfred.bundle.Bundle;
+import net.manukagames.alfred.bundle.BundleConfiguration;
 import net.manukagames.alfred.bundle.BundleGeneration;
 import net.manukagames.alfred.schema.Schema;
-import net.manukagames.alfred.schema.SchemaFile;
+import net.manukagames.alfred.schema.SchemaConfiguration;
 import net.manukagames.alfred.schema.generation.SchemaGeneration;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
@@ -60,24 +58,22 @@ final class BuildBundleCommand implements Callable<Integer> {
   }
 
   private void generate() throws IOException {
-    var schema = readSchema();
     var injector = Guice.createInjector();
+    var schema = readSchema(injector);
     var generation = SchemaGeneration.of(schema, outputDirectory.toPath());
     generation.run();
-    var bundleConfig = readBundle();
+    var bundleConfig = readBundle(injector);
     var bundleGeneration = BundleGeneration.newBundleGenerationBuilder()
-      .withBase(generation.createGeneration(outputDirectory.toPath()))
       .withOutputDirectory(outputDirectory.toPath())
       .withSchema(schema)
-      .withInjector(injector)
       .withConfig(bundleConfig)
       .create();
     bundleGeneration.generate();
   }
 
-  private BundleConfig readBundle() {
+  private Bundle readBundle(Injector injector) {
     var properties = readTopLevelProperties();
-    var reading = BundleConfigFile.Reading.withTopLevelProperties(properties);
+    var reading = BundleConfiguration.Reading.withTopLevelProperties(properties, injector);
     return reading.read();
   }
 
@@ -95,10 +91,10 @@ final class BuildBundleCommand implements Callable<Integer> {
   }
 
 
-  private Schema readSchema() {
-    var file = SchemaFile.of(schemaFile);
+  private Schema readSchema(Injector injector) {
+    var file = SchemaConfiguration.of(schemaFile);
     try {
-      return file.read();
+      return file.read(injector);
     } catch (IOException exception) {
       throw new RuntimeException("failed to read schema", exception);
     }

@@ -1,40 +1,38 @@
 package net.manukagames.alfred.bundle;
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class BundleConfig {
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
+public final class Bundle {
   private final Locale locale;
-  private final Collection<String> preprocessors;
+  private final MessagePreprocessor preprocessor;
   private final Map<String, String> messages;
 
-  private BundleConfig(
+  private Bundle(
     Locale locale,
     Map<String, String> messages,
-    Collection<String> preprocessors
+    MessagePreprocessor preprocessor
   ) {
     this.locale = locale;
     this.messages = messages;
-    this.preprocessors = preprocessors;
+    this.preprocessor = preprocessor;
   }
 
   public Locale locale() {
     return locale;
   }
 
-  public Collection<String> listPreprocessors() {
-    return preprocessors;
+  public Optional<String> loadMessage(String key) {
+    return loadRawMessage(key)
+      .map(message -> preprocessor.process(key, message));
   }
 
-  public Optional<String> findMessage(String key) {
+  public Optional<String> loadRawMessage(String key) {
     Objects.requireNonNull(key);
     return Optional.ofNullable(messages.get(key));
   }
@@ -45,7 +43,7 @@ public final class BundleConfig {
 
   public static final class Builder {
     private final Map<String, String> messages = new HashMap<>();
-    private final Collection<String> preprocessors = new ArrayList<>();
+    private MessagePreprocessor preprocessor = MessagePreprocessors.none();
     private Locale locale;
 
     private Builder() { }
@@ -65,19 +63,15 @@ public final class BundleConfig {
     }
 
     @CanIgnoreReturnValue
-    public Builder addPreprocessor(String preprocessorClass) {
-      Objects.requireNonNull(preprocessorClass);
-      preprocessors.add(preprocessorClass);
+    public Builder withPreprocessor(MessagePreprocessor preprocessor) {
+      Objects.requireNonNull(preprocessor);
+      this.preprocessor = preprocessor;
       return this;
     }
 
-    public BundleConfig create() {
+    public Bundle create() {
       Objects.requireNonNull(locale);
-      return new BundleConfig(
-        locale,
-        Map.copyOf(messages),
-        List.copyOf(preprocessors)
-      );
+      return new Bundle(locale, Map.copyOf(messages), preprocessor);
     }
   }
 }

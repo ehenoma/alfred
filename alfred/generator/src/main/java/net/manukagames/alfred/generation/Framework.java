@@ -3,7 +3,7 @@ package net.manukagames.alfred.generation;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.TypeName;
 
-public interface RecipientSupport {
+public interface Framework {
   CodeBlock createLanguageLookupCode(
     String recipientParameter,
     String languagesParameter
@@ -14,7 +14,7 @@ public interface RecipientSupport {
     String messageParameter
   );
 
-  String translateFieldAccess(String recipientParameter, String fieldName);
+  TypeName createRecipientTypeName();
 
-  TypeName createTypeName();
+  String translateFieldAccess(String recipientParameter, String fieldName);
 }

@@ -8,22 +8,23 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+
 import net.manukagames.alfred.schema.Message;
 import net.manukagames.alfred.schema.Schema;
 
-final class EmptyMessageBundleFile extends AbstractBundleFile {
+public final class BundleInterfaceFile extends AbstractBundleFile {
+  private static final String NAME = "Bundle";
+
   public static TypeName createTypeName(Schema schema) {
     return ClassName.get(schema.packageName(), NAME);
   }
 
-  public static EmptyMessageBundleFile fromSchema(Schema schema) {
+  public static BundleInterfaceFile fromSchema(Schema schema) {
     Objects.requireNonNull(schema);
-    return new EmptyMessageBundleFile(schema);
+    return new BundleInterfaceFile(schema);
   }
 
-  private static final String NAME = "EmptyBundle";
-
-  private EmptyMessageBundleFile(Schema schema) {
+  private BundleInterfaceFile(Schema schema) {
     super(schema);
   }
 
@@ -34,9 +35,8 @@ final class EmptyMessageBundleFile extends AbstractBundleFile {
 
   @Override
   protected TypeSpec createType() {
-    return TypeSpec.classBuilder(NAME)
-      .addSuperinterface(ClassName.get(schema.packageName(), "Bundle"))
-      .addModifiers(Modifier.FINAL)
+    return TypeSpec.interfaceBuilder(NAME)
+      .addModifiers(Modifier.PUBLIC)
       .addMethods(createFormatMethods())
       .build();
   }
@@ -44,7 +44,7 @@ final class EmptyMessageBundleFile extends AbstractBundleFile {
   @Override
   protected MethodSpec createFormatMethod(Message message) {
     return createFormatterSignature(message)
-      .addStatement("return $S", "")
+      .addModifiers(Modifier.ABSTRACT)
       .build();
   }
 }

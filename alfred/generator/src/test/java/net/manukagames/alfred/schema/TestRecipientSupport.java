@@ -27,8 +27,11 @@ public final class TestRecipientSupport extends ClassBasedRecipientSupport {
   @Override
   public CodeBlock createSendCode(String recipientParameter, String messageParameter) {
     return CodeBlock.builder()
-      .addStatement("$T.out.printf(\"%s <- \\\"%s\\\"%n\", $L, $L)",
-        System.class, recipientParameter, messageParameter)
-      .build();
+      .addStatement(
+        "$T.out.printf(\"%s <- \\\"%s\\\"%n\", $L, $L)",
+        System.class,
+        recipientParameter,
+        messageParameter
+      ).build();
   }
 }

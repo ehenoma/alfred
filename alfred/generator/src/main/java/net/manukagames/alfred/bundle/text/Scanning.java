@@ -3,8 +3,19 @@ package net.manukagames.alfred.bundle.text;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
-final class Scanning {
+import net.manukagames.alfred.bundle.text.part.CodePart;
+import net.manukagames.alfred.bundle.text.part.FieldAccessPart;
+import net.manukagames.alfred.bundle.text.part.Part;
+import net.manukagames.alfred.bundle.text.part.StaticPart;
+
+public final class Scanning {
+  public static Scanning of(String input) {
+    Objects.requireNonNull(input);
+    return new Scanning(input);
+  }
+
   private final Collection<Part> parts = new ArrayList<>();
   private final String input;
   private int offset;
@@ -14,10 +25,10 @@ final class Scanning {
     this.input = input;
   }
 
-  public Text scan() {
+  public Text run() {
     scanParts();
     if (parts.isEmpty()) {
-      return PlainText.of(input);
+      return new PlainText(input);
     }
     maybeFinishTextPart();
     return new PlaceholderText(List.copyOf(parts));
@@ -67,7 +78,7 @@ final class Scanning {
     }
     if (!isComplete()) {
       String code = input.substring(partBegin, offset);
-      parts.add(new CodePart(code));
+      parts.add(CodePart.of(code));
       offset++;
     }
   }
@@ -75,7 +86,7 @@ final class Scanning {
   private void scanSimplePlaceholder() {
     String variable = scanIdentifier();
     if (isComplete()) {
-      parts.add(new CodePart(variable));
+      parts.add(CodePart.of(variable));
       return;
     }
     scanVariableOrFieldAccess(variable);
@@ -85,10 +96,10 @@ final class Scanning {
     if (input.charAt(offset) == '.') {
       offset++;
       String field = scanIdentifier();
-      parts.add(new FieldAccessPart(variable, field));
+      parts.add(FieldAccessPart.of(variable, field));
       return;
     }
-    parts.add(new CodePart(variable));
+    parts.add(CodePart.of(variable));
   }
 
   private String scanIdentifier() {
@@ -107,7 +118,7 @@ final class Scanning {
 
   private void finishTextPart() {
     String text = input.substring(partBegin, offset);
-    parts.add(new TextPart(text));
+    parts.add(StaticPart.of(text));
   }
 
   private boolean isLookingAtPlaceholder() {

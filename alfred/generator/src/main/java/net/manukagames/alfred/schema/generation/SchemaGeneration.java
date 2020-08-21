@@ -4,17 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 import net.manukagames.alfred.generation.GeneratedFile;
-import net.manukagames.alfred.generation.Generation;
-import net.manukagames.alfred.generation.RecipientSupport;
 import net.manukagames.alfred.schema.Schema;
 
 public final class SchemaGeneration {
@@ -40,6 +36,33 @@ public final class SchemaGeneration {
     this.outputDirectory = outputDirectory;
   }
 
+  public void run() {
+    var generatedFiles = listGeneratedFiles(schema);
+    writeToTargetDirectory(generatedFiles);
+  }
+
+  private Collection<GeneratedFile> listGeneratedFiles(Schema schema) {
+    return List.of(
+      BundleInterfaceFile.fromSchema(schema),
+      AudienceInterfaceFile.fromSchema(schema),
+      SoloAudienceFile.fromSchema(schema),
+      GroupAudienceFile.fromSchema(schema),
+      BundleRepositoryFile.fromSchema(schema),
+      EmptyMessageBundleFile.fromSchema(schema),
+      RecipientUtilFile.fromSchema(schema)
+    );
+  }
+
+  private void writeToTargetDirectory(Collection<GeneratedFile> files) {
+    var targetDirectory = createTargetDirectory();
+    writeFiles(targetDirectory, files);
+  }
+
+  private Path createTargetDirectory() {
+    var packageTree = schema.packageName().replace(".", File.separator);
+    return outputDirectory.resolve(packageTree);
+  }
+
   private void writeFiles(Path targetDirectory, Iterable<GeneratedFile> files) {
     try {
       ensureTargetDirectoryExists(targetDirectory);
@@ -51,63 +74,9 @@ public final class SchemaGeneration {
     }
   }
 
-  public void run() {
-    var targetDirectory = createTargetDirectory();
-    var generation = createGeneration(targetDirectory);
-    var generatedFiles = listGeneratedFiles(generation);
-    writeFiles(targetDirectory, generatedFiles);
-  }
-
   private void ensureTargetDirectoryExists(Path directory) throws IOException {
     if (Files.notExists(directory)) {
       Files.createDirectories(directory);
     }
-  }
-
-  private Collection<GeneratedFile> listGeneratedFiles(Generation generation) {
-    return List.of(
-      MessageBundleFile.create(generation),
-      AudienceFile.create(generation),
-      SoloAudienceFile.create(generation),
-      GroupAudienceFile.create(generation),
-      MessageBundlesFile.create(generation),
-      EmptyMessageBundleFile.create(generation),
-      RecipientUtilFile.create(generation)
-    );
-  }
-
-  public Generation createGeneration(Path targetDirectory) {
-    return Generation.newBuilder()
-      .withSchema(schema)
-      .withRecipientSupport(findRecipientSupport())
-      .withTargetDirectory(targetDirectory)
-      .create();
-  }
-
-  private Path createTargetDirectory() {
-    var packageTree = schema.packageName().replace(".", File.separator);
-    return outputDirectory.resolve(packageTree);
-  }
-
-  private RecipientSupport findRecipientSupport() {
-    var className = schema.recipient().supportClass();
-    try {
-      var resolvedClass = Class.forName(className);
-      return createSupportFromType(resolvedClass);
-    } catch (ClassNotFoundException invalidName) {
-      throw new IllegalStateException("could not find recipientSupportClass", invalidName);
-    }
-  }
-
-  private RecipientSupport createSupportFromType(Class<?> type) {
-    var instance = injector.getInstance(type);
-    if (!(instance instanceof RecipientSupport)) {
-      var error = String.format(
-        "configured recipientSupportClass %s is not of type RecipientSupport",
-        type.getSimpleName()
-      );
-      throw new IllegalStateException(error);
-    }
-    return (RecipientSupport) instance;
   }
 }
