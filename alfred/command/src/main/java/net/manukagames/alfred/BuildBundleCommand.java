@@ -1,21 +1,21 @@
 package net.manukagames.alfred;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.Callable;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+
+import picocli.CommandLine;
+
 import net.manukagames.alfred.bundle.Bundle;
 import net.manukagames.alfred.bundle.BundleConfiguration;
 import net.manukagames.alfred.bundle.BundleGeneration;
+import net.manukagames.alfred.generation.OutputPath;
 import net.manukagames.alfred.schema.Schema;
 import net.manukagames.alfred.schema.SchemaConfiguration;
 import net.manukagames.alfred.schema.generation.SchemaGeneration;
-import org.yaml.snakeyaml.Yaml;
-import picocli.CommandLine;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Map;
-import java.util.concurrent.Callable;
 
 @CommandLine.Command(
   name = "build",
@@ -46,6 +46,8 @@ final class BuildBundleCommand implements Callable<Integer> {
   )
   File implementationFile;
 
+  private final Injector injector = Guice.createInjector();
+
   @Override
   public Integer call() {
     try {
@@ -58,45 +60,49 @@ final class BuildBundleCommand implements Callable<Integer> {
   }
 
   private void generate() throws IOException {
-    var injector = Guice.createInjector();
     var schema = readSchema(injector);
-    var generation = SchemaGeneration.of(schema, outputDirectory.toPath());
+    var bundle = readBundle(injector);
+    generateSchema(schema);
+    generateBundle(bundle, schema);
+  }
+
+  private void generateSchema(Schema schema) throws IOException {
+    var path = OutputPath.fromFile(outputDirectory);
+    var generation = SchemaGeneration.of(schema, path);
     generation.run();
-    var bundleConfig = readBundle(injector);
-    var bundleGeneration = BundleGeneration.newBundleGenerationBuilder()
-      .withOutputDirectory(outputDirectory.toPath())
+  }
+
+  private void generateBundle(Bundle bundle, Schema schema) throws IOException {
+    var path = OutputPath.fromFile(outputDirectory);
+    var generation = BundleGeneration.newBuilder()
+      .withOutputPath(path)
       .withSchema(schema)
-      .withConfig(bundleConfig)
+      .withBundle(bundle)
       .create();
-    bundleGeneration.generate();
+    generation.run();
   }
 
   private Bundle readBundle(Injector injector) {
-    var properties = readTopLevelProperties();
-    var reading = BundleConfiguration.Reading.withTopLevelProperties(properties, injector);
-    return reading.read();
-  }
-
-  private Map<?, ?> readTopLevelProperties() {
-    var yaml = new Yaml();
-    return (Map<?, ?>) yaml.load(readFileContents());
-  }
-
-  private String readFileContents() {
+    var file = BundleConfiguration.of(implementationFile);
     try {
-      return Files.readString(implementationFile.toPath());
-    } catch (IOException failedRead) {
-      throw new RuntimeException(failedRead);
+      return file.read(injector);
+    } catch (IOException exception) {
+      throw new RuntimeException(
+        String.format("failed to read bundle %s", implementationFile.getName()),
+        exception
+      );
     }
   }
-
 
   private Schema readSchema(Injector injector) {
     var file = SchemaConfiguration.of(schemaFile);
     try {
       return file.read(injector);
     } catch (IOException exception) {
-      throw new RuntimeException("failed to read schema", exception);
+      throw new RuntimeException(
+        String.format("failed to read schema %s", schemaFile.getName()),
+        exception
+      );
     }
   }
 }

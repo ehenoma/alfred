@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Injector;
-import net.manukagames.alfred.schema.SchemaConfiguration;
-import net.manukagames.alfred.schema.YamlReaders;
+import net.manukagames.alfred.yaml.InvalidFormatException;
+import net.manukagames.alfred.yaml.YamlReaders;
 import org.yaml.snakeyaml.Yaml;
 
 public final class BundleConfiguration {
@@ -33,27 +33,16 @@ public final class BundleConfiguration {
     this.path = path;
   }
 
-  public Bundle read(Injector injector) throws IOException {
-    return read(injector, new Yaml());
-  }
-
-  public Bundle read(Injector injector, Yaml parser) throws IOException{
-    var topLevelProperties = parseTopLevel(parser);
-    var reading = new Reading(topLevelProperties, injector);
+  public Bundle read(Injector injector) throws IOException{
+    var reading = Reading.ofFile(path, injector);
     try {
       return reading.read();
-    } catch (SchemaConfiguration.InvalidFormatException invalidFormat) {
+    } catch (InvalidFormatException invalidFormat) {
       throw new IOException(invalidFormat);
     }
   }
 
-  private Map<?, ?> parseTopLevel(Yaml parser) throws IOException {
-    try (var input = Files.newBufferedReader(path)) {
-      return parser.load(input);
-    }
-  }
-
-  public static final class Reading {
+  static final class Reading {
     private final Map<?, ?> topLevelProperties;
     private final Injector injector;
     private final Bundle.Builder config = Bundle.newBuilder();
@@ -121,6 +110,25 @@ public final class BundleConfiguration {
       Objects.requireNonNull(properties);
       Objects.requireNonNull(injector);
       return new Reading(properties, injector);
+    }
+
+    public static Reading ofFile(Path path, Injector injector) {
+      var properties = readTopLevelProperties(path);
+      return withTopLevelProperties(properties, injector);
+    }
+
+
+    private static Map<?, ?> readTopLevelProperties(Path path) {
+      var yaml = new Yaml();
+      return (Map<?, ?>) yaml.load(readFileContents(path));
+    }
+
+    private static String readFileContents(Path path) {
+      try {
+        return Files.readString(path);
+      } catch (IOException failedRead) {
+        throw new RuntimeException(failedRead);
+      }
     }
   }
 }

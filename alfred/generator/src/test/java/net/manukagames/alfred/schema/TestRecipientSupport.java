@@ -3,11 +3,11 @@ package net.manukagames.alfred.schema;
 import com.google.inject.Inject;
 import com.squareup.javapoet.*;
 
-import net.manukagames.alfred.generation.ClassBasedRecipientSupport;
+import net.manukagames.alfred.generation.FixedRecipientFramework;
 
 import java.util.Locale;
 
-public final class TestRecipientSupport extends ClassBasedRecipientSupport {
+public final class TestRecipientSupport extends FixedRecipientFramework {
   @Inject
   private TestRecipientSupport() {
     super(String.class, GetAccessorStrategy.create());

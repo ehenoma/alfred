@@ -3,21 +3,21 @@ package net.manukagames.alfred.generation;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.TypeName;
 
-public abstract class ClassBasedRecipientSupport implements Framework {
+public abstract class FixedRecipientFramework implements Framework {
   private final AccessorStrategy accessorStrategy;
-  private final TypeName name;
+  private final TypeName recipientTypeName;
 
-  protected ClassBasedRecipientSupport(
+  protected FixedRecipientFramework(
     Class<?> recipientClass,
     AccessorStrategy accessorStrategy
   ) {
     this.accessorStrategy = accessorStrategy;
-    this.name = ClassName.get(recipientClass);
+    this.recipientTypeName = ClassName.get(recipientClass);
   }
 
   @Override
   public TypeName createRecipientTypeName() {
-    return name;
+    return recipientTypeName;
   }
 
   @Override

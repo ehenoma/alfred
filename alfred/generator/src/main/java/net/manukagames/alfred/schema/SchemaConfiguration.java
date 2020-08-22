@@ -12,6 +12,8 @@ import java.util.Objects;
 
 import com.google.inject.Injector;
 import net.manukagames.alfred.generation.Framework;
+import net.manukagames.alfred.yaml.InvalidFormatException;
+import net.manukagames.alfred.yaml.YamlReaders;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.annotation.Nullable;
@@ -50,17 +52,6 @@ public final class SchemaConfiguration {
   private Map<?, ?> parseTopLevel(Yaml parser) throws IOException {
     try (var input = Files.newBufferedReader(path)) {
       return parser.load(input);
-    }
-  }
-
-  public static final class InvalidFormatException extends RuntimeException {
-    static InvalidFormatException withMessage(String message) {
-      Objects.requireNonNull(message);
-      return new InvalidFormatException(message);
-    }
-
-    private InvalidFormatException(String message) {
-      super(message);
     }
   }
 
