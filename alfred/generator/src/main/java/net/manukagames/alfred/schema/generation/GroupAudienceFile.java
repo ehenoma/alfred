@@ -94,6 +94,29 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
   }
 
   private CodeBlock createSendMethodCode(Message message) {
+    return isRecipientSpecific(message)
+      ? createRecipientSpecificSendMethodCode(message)
+      : createCachedSendMethodCode(message);
+  }
+
+  private boolean isRecipientSpecific(Message message) {
+    return message.context().stream()
+      .anyMatch(Message.Variable::hasRecipientType);
+  }
+
+  private CodeBlock createRecipientSpecificSendMethodCode(Message message) {
+    var factoryMethod = message.createFactoryMethodName();
+    var arguments =  String.join(", ", listArgumentNames(message));
+    return CodeBlock.builder()
+      .beginControlFlow("for ($T recipient_ : this.recipients)", recipientType)
+      .addStatement("$T bundle_ = this.bundles.forRecipient(recipient_)", bundleType)
+      .addStatement("String message_ = bundle_.$L($L)", factoryMethod, arguments)
+      .addStatement("$T.send(recipient_, message_)", recipientUtilType)
+      .endControlFlow()
+      .build();
+  }
+
+  private CodeBlock createCachedSendMethodCode(Message message) {
     var factoryMethod = message.createFactoryMethodName();
     var arguments =  String.join(", ", listArgumentNames(message));
     return CodeBlock.builder()
@@ -107,7 +130,7 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
       .addStatement("$T.send(recipient_, cachedMessage_)", recipientUtilType)
       .addStatement("continue")
       .endControlFlow()
-      .addStatement("$T bundle_ = this.bundles.find(language_)", bundleType)
+      .addStatement("$T bundle_ = this.bundles.forLanguage(language_)", bundleType)
       .addStatement("String message_ = bundle_.$L($L)", factoryMethod, arguments)
       .addStatement("cache_[languageId_] = message_")
       .addStatement("$T.send(recipient_, message_)", recipientUtilType)

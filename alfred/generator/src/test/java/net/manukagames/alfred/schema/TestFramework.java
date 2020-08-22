@@ -7,9 +7,9 @@ import net.manukagames.alfred.generation.FixedRecipientFramework;
 
 import java.util.Locale;
 
-public final class TestRecipientSupport extends FixedRecipientFramework {
+public final class TestFramework extends FixedRecipientFramework {
   @Inject
-  private TestRecipientSupport() {
+  private TestFramework() {
     super(String.class, GetAccessorStrategy.create());
   }
 

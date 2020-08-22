@@ -6,7 +6,7 @@ import org.gradle.api.Project
 final class AlfredPlugin implements Plugin<Project> {
   @Override
   void apply(Project project) {
-    def extension = AlfredExtension.create(project)
+    AlfredExtension.create(project)
     configureBuildSchemaTask(project)
   }
 

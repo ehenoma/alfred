@@ -83,7 +83,7 @@ final class BuildBundleCommand implements Callable<Integer> {
   }
 
   private Bundle readBundle(Injector injector) {
-    var file = BundleConfiguration.of(implementationFile);
+    var file = BundleConfiguration.ofFile(implementationFile);
     try {
       return file.read(injector);
     } catch (IOException exception) {
@@ -95,7 +95,7 @@ final class BuildBundleCommand implements Callable<Integer> {
   }
 
   private Schema readSchema(Injector injector) {
-    var file = SchemaConfiguration.of(schemaFile);
+    var file = SchemaConfiguration.ofFile(schemaFile);
     try {
       return file.read(injector);
     } catch (IOException exception) {

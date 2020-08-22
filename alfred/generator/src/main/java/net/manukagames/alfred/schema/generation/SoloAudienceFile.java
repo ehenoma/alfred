@@ -2,11 +2,11 @@ package net.manukagames.alfred.schema.generation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.lang.model.element.Modifier;
 
-import com.google.common.base.Preconditions;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -24,7 +24,7 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
   }
 
   public static SoloAudienceFile fromSchema(Schema schema) {
-    Preconditions.checkNotNull(schema);
+    Objects.requireNonNull(schema);
     return new SoloAudienceFile(schema);
   }
 
@@ -91,8 +91,8 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
     var arguments = String.join(", ", listArgumentNames(message));
     var name = message.createFactoryMethodName();
     return CodeBlock.builder()
-      .addStatement("String message_ = bundle.$L($L)", name, arguments)
-      .addStatement("$T.send(recipient, message_)", recipientUtilType)
+      .addStatement("String message_ = this.bundle.$L($L)", name, arguments)
+      .addStatement("$T.send(this.recipient, message_)", recipientUtilType)
       .build();
   }
 
@@ -110,8 +110,8 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
 
   private MethodSpec createConstructor() {
     var parameters = List.of(
-      ParameterSpec.builder(recipientType, "recipient").build(),
-      ParameterSpec.builder(createBundlesType(), "bundles").build()
+      ParameterSpec.builder(recipientType, "recipient_").build(),
+      ParameterSpec.builder(createBundlesType(), "bundles_").build()
     );
     return MethodSpec.constructorBuilder()
       .addModifiers(Modifier.PROTECTED)
@@ -122,10 +122,10 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
 
   private CodeBlock createConstructorCode() {
     var code = CodeBlock.builder();
-    code.addStatement("$T language = $T.lookupLanguage(recipient, bundles.languages())",
+    code.addStatement("$T language_ = $T.lookupLanguage(recipient_, bundles_.languages())",
       Language.class, recipientUtilType);
-    code.addStatement("this.bundle = bundles.find(language)");
-    code.addStatement("this.recipient = recipient");
+    code.addStatement("this.bundle = bundles_.forLanguage(language_)");
+    code.addStatement("this.recipient = recipient_");
     return code.build();
   }
 }

@@ -4,6 +4,17 @@ import java.util.Locale;
 import java.util.Objects;
 
 public final class Language {
+  public static Language fromLocale(int id, Locale locale) {
+    Objects.requireNonNull(locale);
+    return new Language(id, locale.toLanguageTag(), locale);
+  }
+
+  public static Language create(int id, String name, Locale locale) {
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(locale);
+    return new Language(id, name, locale);
+  }
+
   private final int id;
   private final String name;
   private final Locale locale;
@@ -44,18 +55,11 @@ public final class Language {
 
   @Override
   public String toString() {
-    return String.format("Language{id: %d, name: %s, locale: %s}",
-      id, name, locale);
-  }
-
-  public static Language fromLocale(int id, Locale locale) {
-    Objects.requireNonNull(locale);
-    return new Language(id, locale.toLanguageTag(), locale);
-  }
-
-  public static Language create(int id, String name, Locale locale) {
-    Objects.requireNonNull(name);
-    Objects.requireNonNull(locale);
-    return new Language(id, name, locale);
+    return String.format(
+      "Language{id: %d, name: %s, locale: %s}",
+      id,
+      name,
+      locale
+    );
   }
 }

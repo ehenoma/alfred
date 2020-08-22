@@ -37,7 +37,7 @@ final class VerifySchemaCommand implements Callable<Integer> {
   }
 
   private void readSchema() {
-    var file = SchemaConfiguration.of(schemaFile);
+    var file = SchemaConfiguration.ofFile(schemaFile);
     try {
       file.read(Guice.createInjector());
     } catch (IOException exception) {

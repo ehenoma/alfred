@@ -8,41 +8,51 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Injector;
-import net.manukagames.alfred.yaml.InvalidFormatException;
-import net.manukagames.alfred.yaml.YamlReaders;
+
 import org.yaml.snakeyaml.Yaml;
 
+import net.manukagames.alfred.yaml.MoreFiles;
+import net.manukagames.alfred.yaml.YamlReaders;
+
 public final class BundleConfiguration {
-  public static BundleConfiguration of(File file) {
+  public static BundleConfiguration withContent(String content) {
+    Objects.requireNonNull(content);
+    return new BundleConfiguration(() -> content);
+  }
+
+  public static BundleConfiguration ofFile(File file) {
     Objects.requireNonNull(file);
-    return new BundleConfiguration(file.toPath());
+    return atPath(file.toPath());
   }
 
-  public static BundleConfiguration at(Path path) {
+  public static BundleConfiguration atPath(Path path) {
     Objects.requireNonNull(path);
-    return new BundleConfiguration(path);
+    return new BundleConfiguration(() -> Files.readString(path));
   }
 
-  private final Path path;
+  private final Callable<String> content;
 
-  private BundleConfiguration(Path path) {
-    this.path = path;
+  private BundleConfiguration(Callable<String> content) {
+    this.content = content;
   }
 
-  public Bundle read(Injector injector) throws IOException{
-    var reading = Reading.ofFile(path, injector);
+  public Bundle read(Injector injector) throws IOException {
     try {
-      return reading.read();
-    } catch (InvalidFormatException invalidFormat) {
-      throw new IOException(invalidFormat);
+      return new Reading(readRoots(), injector).run();
+    } catch (Exception failure) {
+      throw MoreFiles.asIoException(failure);
     }
   }
 
-  static final class Reading {
+  private Map<?, ?> readRoots() throws Exception {
+    return new Yaml().loadAs(content.call(), Map.class);
+  }
+
+  private static final class Reading {
     private final Map<?, ?> topLevelProperties;
     private final Injector injector;
     private final Bundle.Builder config = Bundle.newBuilder();
@@ -52,7 +62,7 @@ public final class BundleConfiguration {
       this.topLevelProperties = topLevelProperties;
     }
 
-    public Bundle read() {
+    public Bundle run() {
       readLocale();
       readMessages();
       readPreprocessors();
@@ -102,32 +112,6 @@ public final class BundleConfiguration {
       } catch (ClassCastException invalidType) {
         var error = String.format("%s is not a MessagePreprocessor", name);
         throw new RuntimeException(error, invalidType);
-      }
-    }
-
-    @VisibleForTesting
-    public static Reading withTopLevelProperties(Map<?, ?> properties, Injector injector) {
-      Objects.requireNonNull(properties);
-      Objects.requireNonNull(injector);
-      return new Reading(properties, injector);
-    }
-
-    public static Reading ofFile(Path path, Injector injector) {
-      var properties = readTopLevelProperties(path);
-      return withTopLevelProperties(properties, injector);
-    }
-
-
-    private static Map<?, ?> readTopLevelProperties(Path path) {
-      var yaml = new Yaml();
-      return (Map<?, ?>) yaml.load(readFileContents(path));
-    }
-
-    private static String readFileContents(Path path) {
-      try {
-        return Files.readString(path);
-      } catch (IOException failedRead) {
-        throw new RuntimeException(failedRead);
       }
     }
   }

@@ -9,64 +9,65 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.google.inject.Injector;
-import net.manukagames.alfred.generation.Framework;
-import net.manukagames.alfred.yaml.InvalidFormatException;
-import net.manukagames.alfred.yaml.YamlReaders;
-import org.yaml.snakeyaml.Yaml;
+import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
 
+import com.google.inject.Injector;
+
+import org.yaml.snakeyaml.Yaml;
+
+import net.manukagames.alfred.generation.Framework;
+import net.manukagames.alfred.yaml.MoreFiles;
+import net.manukagames.alfred.yaml.YamlReaders;
+
 public final class SchemaConfiguration {
-  public static SchemaConfiguration of(File file) {
+  public static SchemaConfiguration withContent(String content) {
+    Objects.requireNonNull(content);
+    return new SchemaConfiguration(() -> content);
+  }
+
+  public static SchemaConfiguration ofFile(File file) {
     Objects.requireNonNull(file);
-    return new SchemaConfiguration(file.toPath());
+    return atPath(file.toPath());
   }
 
-  public static SchemaConfiguration at(Path path) {
+  public static SchemaConfiguration atPath(Path path) {
     Objects.requireNonNull(path);
-    return new SchemaConfiguration(path);
+    return new SchemaConfiguration(() -> Files.readString(path));
   }
 
-  private final Path path;
+  private final Callable<String> content;
 
-  private SchemaConfiguration(Path path) {
-    this.path = path;
+  private SchemaConfiguration(Callable<String> content) {
+    this.content = content;
   }
 
   public Schema read(Injector injector) throws IOException {
-    return read(injector, new Yaml());
-  }
-
-  public Schema read(Injector injector, Yaml parser) throws IOException{
-    var topLevelProperties = parseTopLevel(parser);
-    var reading = new Reading(topLevelProperties, injector);
     try {
-      return reading.read();
-    } catch (InvalidFormatException invalidFormat) {
-      throw new IOException(invalidFormat);
+      var topLevelProperties = parseTopLevel();
+      return new Reading(topLevelProperties, injector).run();
+    } catch (Exception failure) {
+      throw MoreFiles.asIoException(failure);
     }
   }
 
-  private Map<?, ?> parseTopLevel(Yaml parser) throws IOException {
-    try (var input = Files.newBufferedReader(path)) {
-      return parser.load(input);
-    }
+  private Map<?, ?> parseTopLevel() throws Exception {
+    return new Yaml().load(content.call());
   }
 
-  static final class Reading {
+  private static final class Reading {
     private final Schema.Builder builder;
     private final Injector injector;
     private final Map<?, ?> topLevelProperties;
 
-    Reading(Map<?, ?> topLevelProperties, Injector injector) {
+    private Reading(Map<?, ?> topLevelProperties, Injector injector) {
       this.topLevelProperties = topLevelProperties;
       this.injector = injector;
       this.builder = Schema.newBuilder();
     }
 
-    public Schema read() {
+    public Schema run() {
       builder.withPackageName(YamlReaders.require("packageName", topLevelProperties));
       Map<?, ?> messagesProperties = YamlReaders.require("messages", topLevelProperties);
       builder.withMessages(readMessages(messagesProperties));

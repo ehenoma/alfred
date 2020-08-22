@@ -1,8 +1,7 @@
 package net.manukagames.alfred.bundle;
 
 import java.io.IOException;
-
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 
 import net.manukagames.alfred.generation.OutputPath;
 import net.manukagames.alfred.schema.Schema;
@@ -54,9 +53,9 @@ public final class BundleGeneration {
     }
 
     public BundleGeneration create() {
-      Preconditions.checkNotNull(bundle);
-      Preconditions.checkNotNull(schema);
-      Preconditions.checkNotNull(outputPath);
+      Objects.requireNonNull(bundle);
+      Objects.requireNonNull(schema);
+      Objects.requireNonNull(outputPath);
       return new BundleGeneration(bundle, schema, outputPath);
     }
   }

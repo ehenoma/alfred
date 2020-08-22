@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.Modifier;
 
@@ -29,7 +31,12 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
 
   public static BundleRepositoryFile fromSchema(Schema schema) {
     Objects.requireNonNull(schema);
-    return new BundleRepositoryFile(schema);
+    return new BundleRepositoryFile(schema, false);
+  }
+
+  public static BundleRepositoryFile fromSchemaWithAudience(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new BundleRepositoryFile(schema, true);
   }
 
   private final Schema schema;
@@ -37,15 +44,17 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
   private final TypeName soloAudienceType;
   private final TypeName bundleArrayType;
   private final TypeName bundleType;
+  private final boolean generateAudience;
 
   private static final String NAME = "Bundles";
 
-  private BundleRepositoryFile(Schema schema) {
+  private BundleRepositoryFile(Schema schema, boolean generateAudience) {
     this.schema = schema;
     this.groupAudienceType = GroupAudienceFile.createTypeName(schema);
     this.soloAudienceType = SoloAudienceFile.createTypeName(schema);
     this.bundleType = BundleInterfaceFile.createTypeName(schema);
     this.bundleArrayType = ArrayTypeName.of(bundleType);
+    this.generateAudience = generateAudience;
   }
 
   @Override
@@ -84,28 +93,44 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
   }
 
   private MethodSpec createConstructor() {
-    var languagesParameter = ParameterSpec.builder(LANGUAGES_TYPE, "languages").build();
-    var bundlesParameter = ParameterSpec.builder(bundleArrayType, "bundles").build();
+    var languagesParameter = ParameterSpec.builder(LANGUAGES_TYPE, "languages_").build();
+    var bundlesParameter = ParameterSpec.builder(bundleArrayType, "bundles_").build();
     return MethodSpec.constructorBuilder()
       .addModifiers(Modifier.PRIVATE)
       .addParameter(bundlesParameter)
       .addParameter(languagesParameter)
-      .addStatement("this.bundles = bundles")
-      .addStatement("this.languages = languages")
+      .addStatement("this.bundles = bundles_")
+      .addStatement("this.languages = languages_")
       .build();
   }
 
   private Collection<MethodSpec> createMethods() {
+    return generateAudience ? createAllMethods() : createRequiredMethods();
+  }
+
+  private Collection<MethodSpec> createAllMethods() {
+    return Stream.concat(
+      createRequiredMethods().stream(),
+      createAudienceMethods().stream()
+    ).collect(Collectors.toList());
+  }
+
+  private Collection<MethodSpec> createRequiredMethods() {
+    return List.of(
+      createFindMethod(),
+      createFindByRecipientMethod(),
+      createLanguageCounter(),
+      createLanguageTableAccessor()
+    );
+  }
+
+  private Collection<MethodSpec> createAudienceMethods() {
     var recipientType = schema.framework().createRecipientTypeName();
     var audienceType = createAudienceTypeName();
     return List.of(
       createSoloAudienceFactory(recipientType, audienceType),
       createVariadicGroupAudienceFactory(recipientType, audienceType),
-      createGroupAudienceFactory(recipientType, audienceType),
-      createFindMethod(),
-      createFindByRecipientMethod(),
-      createLanguageCounter(),
-      createLanguageTableAccessor()
+      createGroupAudienceFactory(recipientType, audienceType)
     );
   }
 
@@ -117,10 +142,10 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
     TypeName recipientType,
     TypeName audience
   ) {
-    var parameter = ParameterSpec.builder(recipientType, "recipient").build();
+    var parameter = ParameterSpec.builder(recipientType, "recipient_").build();
     return createAudienceFactoryBuilder(parameter, audience)
-      .addStatement("$T.requireNonNull(recipient)", Objects.class)
-      .addStatement("return new $T(recipient, this)", soloAudienceType)
+      .addStatement("$T.requireNonNull(recipient_)", Objects.class)
+      .addStatement("return new $T(recipient_, this)", soloAudienceType)
       .build();
   }
 
@@ -129,11 +154,11 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
     TypeName audience
   ) {
     var parameterType = ArrayTypeName.of(recipientType);
-    var parameter = ParameterSpec.builder(parameterType, "recipients").build();
+    var parameter = ParameterSpec.builder(parameterType, "recipients_").build();
     return createAudienceFactoryBuilder(parameter, audience)
       .varargs()
-      .addStatement("$T.requireNonNull(recipients)", Objects.class)
-      .addStatement("return new $T($T.asList(recipients), this)", groupAudienceType, Arrays.class)
+      .addStatement("$T.requireNonNull(recipients_)", Objects.class)
+      .addStatement("return new $T($T.asList(recipients_), this)", groupAudienceType, Arrays.class)
       .build();
   }
 
@@ -145,10 +170,10 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
     TypeName audienceType
   ) {
     var parameterType = ParameterizedTypeName.get(COLLECTION_NAME, recipientType);
-    var parameter = ParameterSpec.builder(parameterType, "recipients").build();
+    var parameter = ParameterSpec.builder(parameterType, "recipients_").build();
     return createAudienceFactoryBuilder(parameter, audienceType)
-      .addStatement("$T.requireNonNull(recipients)", Objects.class)
-      .addStatement("return new $T(new $T<>(recipients), this)", groupAudienceType, ArrayList.class)
+      .addStatement("$T.requireNonNull(recipients_)", Objects.class)
+      .addStatement("return new $T(new $T<>(recipients_), this)", groupAudienceType, ArrayList.class)
       .build();
   }
 
@@ -163,25 +188,26 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
   }
 
   private MethodSpec createFindMethod() {
-    var parameter = ParameterSpec.builder(ClassName.get(Language.class), "language").build();
-    return MethodSpec.methodBuilder("find")
+    var parameter = ParameterSpec.builder(ClassName.get(Language.class), "language_").build();
+    return MethodSpec.methodBuilder("forLanguage")
       .addParameter(parameter)
+      .addModifiers(Modifier.PUBLIC)
       .returns(bundleType)
-      .addStatement("return bundles[language.id()]")
+      .addStatement("return this.bundles[language_.id()]")
       .build();
   }
 
   private MethodSpec createFindByRecipientMethod() {
     var recipientType = schema.framework().createRecipientTypeName();
     var utilType = RecipientUtilFile.createTypeName(schema);
-    var parameter = ParameterSpec.builder(recipientType, "recipient").build();
+    var parameter = ParameterSpec.builder(recipientType, "recipient_").build();
     return MethodSpec.methodBuilder("forRecipient")
       .addModifiers(Modifier.PUBLIC)
       .addParameter(parameter)
       .returns(bundleType)
-      .addStatement("$T language = $T.lookupLanguage(recipient)",
+      .addStatement("$T language_ = $T.lookupLanguage(recipient_, this.languages)",
         Language.class, utilType)
-      .addStatement("return find(language)")
+      .addStatement("return forLanguage(language_)")
       .build();
   }
 
@@ -189,7 +215,7 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
     return MethodSpec.methodBuilder("countSupportedLanguages")
       .returns(TypeName.INT)
       .addModifiers(Modifier.PUBLIC)
-      .addStatement("return bundles.length")
+      .addStatement("return this.bundles.length")
       .build();
   }
 
@@ -197,7 +223,7 @@ public final class BundleRepositoryFile extends AbstractCachedGeneratedFile {
     return MethodSpec.methodBuilder("languages")
       .returns(LANGUAGES_TYPE)
       .addModifiers(Modifier.PUBLIC)
-      .addStatement("return languages")
+      .addStatement("return this.languages")
       .build();
   }
 
