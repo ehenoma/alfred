@@ -1,20 +1,25 @@
 package net.manukagames.alfred.generation;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
+import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import net.manukagames.alfred.yaml.MoreFiles;
 
 public interface GeneratedFile {
-  String name();
-
+  ClassName name();
   JavaFile asModel();
 
   default void writeToDirectory(Path directory) throws IOException {
-    var filePath = directory.resolve(name());
-    Files.deleteIfExists(filePath);
-    Files.writeString(filePath, asModel().toString(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+    var path = selectTargetPath(directory);
+    var content = asModel().toString();
+    MoreFiles.writeToNewFile(path, content);
+  }
+
+  private Path selectTargetPath(Path directory) {
+    var name = String.format("%s.java", name().simpleName());
+    return directory.resolve(name);
   }
 }

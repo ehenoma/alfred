@@ -2,11 +2,11 @@ package net.manukagames.alfred.schema.generation;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.lang.model.element.Modifier;
 
-import com.google.common.base.Preconditions;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -14,19 +14,18 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.schema.Message;
+import net.manukagames.alfred.schema.Schema;
 
 public final class SoloAudienceFile extends AbstractAudienceFile {
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
+  public static TypeName createTypeName(Schema schema) {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
-  public static SoloAudienceFile create(Generation generation) {
-    Preconditions.checkNotNull(generation);
-    return new SoloAudienceFile(generation);
+  public static SoloAudienceFile fromSchema(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new SoloAudienceFile(schema);
   }
 
   private static final String NAME = "SoloAudience";
@@ -35,11 +34,16 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
   private final TypeName recipientUtilType;
   private final TypeName messageBundleType;
 
-  private SoloAudienceFile(Generation generation) {
-    super(NAME, generation);
-    this.recipientType = generation.recipientSupport().createTypeName();
-    this.messageBundleType = MessageBundleFile.createTypeName(generation);
-    this.recipientUtilType = RecipientUtilFile.createTypeName(generation);
+  private SoloAudienceFile(Schema schema) {
+    super(schema);
+    this.recipientType = schema.framework().createRecipientTypeName();
+    this.messageBundleType = BundleInterfaceFile.createTypeName(schema);
+    this.recipientUtilType = RecipientUtilFile.createTypeName(schema);
+  }
+
+  @Override
+  public ClassName name() {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
   @Override
@@ -72,7 +76,7 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
   }
 
   private ClassName createBundlesType() {
-    return ClassName.get(generation.schema().packageName(), "MessageBundles");
+    return ClassName.get(schema.packageName(), "Bundles");
   }
 
   @Override
@@ -87,8 +91,8 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
     var arguments = String.join(", ", listArgumentNames(message));
     var name = message.createFactoryMethodName();
     return CodeBlock.builder()
-      .addStatement("String message_ = bundle.$L($L)", name, arguments)
-      .addStatement("$T.send(recipient, message_)", recipientUtilType)
+      .addStatement("String message_ = this.bundle.$L($L)", name, arguments)
+      .addStatement("$T.send(this.recipient, message_)", recipientUtilType)
       .build();
   }
 
@@ -106,8 +110,8 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
 
   private MethodSpec createConstructor() {
     var parameters = List.of(
-      ParameterSpec.builder(recipientType, "recipient").build(),
-      ParameterSpec.builder(createBundlesType(), "bundles").build()
+      ParameterSpec.builder(recipientType, "recipient_").build(),
+      ParameterSpec.builder(createBundlesType(), "bundles_").build()
     );
     return MethodSpec.constructorBuilder()
       .addModifiers(Modifier.PROTECTED)
@@ -118,10 +122,10 @@ public final class SoloAudienceFile extends AbstractAudienceFile {
 
   private CodeBlock createConstructorCode() {
     var code = CodeBlock.builder();
-    code.addStatement("$T language = $T.lookupLanguage(recipient, bundles.languages())",
+    code.addStatement("$T language_ = $T.lookupLanguage(recipient_, bundles_.languages())",
       Language.class, recipientUtilType);
-    code.addStatement("this.bundle = bundles.find(language)");
-    code.addStatement("this.recipient = recipient");
+    code.addStatement("this.bundle = bundles_.forLanguage(language_)");
+    code.addStatement("this.recipient = recipient_");
     return code.build();
   }
 }

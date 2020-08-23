@@ -11,28 +11,34 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import net.manukagames.alfred.generation.AbstractCachedGeneratedFile;
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.language.LanguageTable;
+import net.manukagames.alfred.schema.Schema;
 
 public final class RecipientUtilFile extends AbstractCachedGeneratedFile {
-  static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
+  static TypeName createTypeName(Schema schema) {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
-  public static RecipientUtilFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new RecipientUtilFile(generation);
+  public static RecipientUtilFile fromSchema(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new RecipientUtilFile(schema);
   }
 
   private static final String NAME = "Recipients";
 
+  private final Schema schema;
   private final ParameterSpec recipientParameter;
 
-  private RecipientUtilFile(Generation generation) {
-    super(NAME, generation);
-    var recipientType = generation.recipientSupport().createTypeName();
+  private RecipientUtilFile(Schema schema) {
+    var recipientType = schema.framework().createRecipientTypeName();
     this.recipientParameter = ParameterSpec.builder(recipientType, "recipient").build();
+    this.schema = schema;
+  }
+
+  @Override
+  public ClassName name() {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
   @Override
@@ -51,8 +57,7 @@ public final class RecipientUtilFile extends AbstractCachedGeneratedFile {
   ).build();
 
   private MethodSpec createSendMethod() {
-    var code = generation.recipientSupport()
-      .createSendCode("recipient", "message");
+    var code = schema.framework().createSendCode("recipient", "message");
     return MethodSpec.methodBuilder("send")
       .addParameter(recipientParameter)
       .addParameter(MESSAGE_PARAMETER)
@@ -66,8 +71,7 @@ public final class RecipientUtilFile extends AbstractCachedGeneratedFile {
   ).build();
 
   private MethodSpec createLanguageLookupMethod() {
-    var code = generation.recipientSupport()
-      .createLanguageLookupCode("recipient", "languages");
+    var code = schema.framework().createLanguageLookupCode("recipient", "languages");
     return MethodSpec.methodBuilder("lookupLanguage")
       .returns(TypeName.get(Language.class))
       .addModifiers(Modifier.PUBLIC, Modifier.STATIC)

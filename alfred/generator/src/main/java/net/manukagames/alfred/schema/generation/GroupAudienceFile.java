@@ -14,19 +14,18 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.language.Language;
 import net.manukagames.alfred.schema.Message;
+import net.manukagames.alfred.schema.Schema;
 
 public final class GroupAudienceFile extends AbstractAudienceFile {
-  public static TypeName createTypeName(Generation generation) {
-    return ClassName.get(generation.schema().packageName(), NAME);
+  public static GroupAudienceFile fromSchema(Schema schema) {
+    Objects.requireNonNull(schema);
+    return new GroupAudienceFile(schema);
   }
 
-  public static GroupAudienceFile create(Generation generation) {
-    Objects.requireNonNull(generation);
-    return new GroupAudienceFile(generation);
+  public static ClassName createTypeName(Schema schema) {
+    return ClassName.get(schema.packageName(), NAME);
   }
 
   private final TypeName recipientUtilType;
@@ -37,16 +36,21 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
 
   private static final String NAME = "GroupAudience";
 
-  private GroupAudienceFile(Generation generation) {
-    super(NAME, generation);
-    this.recipientType = generation.recipientSupport().createTypeName();
-    this.bundlesType = MessageBundlesFile.createTypeName(generation);
-    this.recipientUtilType = RecipientUtilFile.createTypeName(generation);
-    this.bundleType = MessageBundleFile.createTypeName(generation);
+  private GroupAudienceFile(Schema schema) {
+    super(schema);
+    this.recipientType = schema.framework().createRecipientTypeName();
+    this.bundlesType = BundleRepositoryFile.createTypeName(schema);
+    this.recipientUtilType = RecipientUtilFile.createTypeName(schema);
+    this.bundleType = BundleInterfaceFile.createTypeName(schema);
     this.iterableRecipientType = ParameterizedTypeName.get(
       ClassName.get(Iterable.class),
       recipientType
     );
+  }
+
+  @Override
+  public ClassName name() {
+    return createTypeName(schema);
   }
 
   @Override
@@ -90,6 +94,29 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
   }
 
   private CodeBlock createSendMethodCode(Message message) {
+    return isRecipientSpecific(message)
+      ? createRecipientSpecificSendMethodCode(message)
+      : createCachedSendMethodCode(message);
+  }
+
+  private boolean isRecipientSpecific(Message message) {
+    return message.context().stream()
+      .anyMatch(Message.Variable::hasRecipientType);
+  }
+
+  private CodeBlock createRecipientSpecificSendMethodCode(Message message) {
+    var factoryMethod = message.createFactoryMethodName();
+    var arguments =  String.join(", ", listArgumentNames(message));
+    return CodeBlock.builder()
+      .beginControlFlow("for ($T recipient_ : this.recipients)", recipientType)
+      .addStatement("$T bundle_ = this.bundles.forRecipient(recipient_)", bundleType)
+      .addStatement("String message_ = bundle_.$L($L)", factoryMethod, arguments)
+      .addStatement("$T.send(recipient_, message_)", recipientUtilType)
+      .endControlFlow()
+      .build();
+  }
+
+  private CodeBlock createCachedSendMethodCode(Message message) {
     var factoryMethod = message.createFactoryMethodName();
     var arguments =  String.join(", ", listArgumentNames(message));
     return CodeBlock.builder()
@@ -103,7 +130,7 @@ public final class GroupAudienceFile extends AbstractAudienceFile {
       .addStatement("$T.send(recipient_, cachedMessage_)", recipientUtilType)
       .addStatement("continue")
       .endControlFlow()
-      .addStatement("$T bundle_ = this.bundles.find(language_)", bundleType)
+      .addStatement("$T bundle_ = this.bundles.forLanguage(language_)", bundleType)
       .addStatement("String message_ = bundle_.$L($L)", factoryMethod, arguments)
       .addStatement("cache_[languageId_] = message_")
       .addStatement("$T.send(recipient_, message_)", recipientUtilType)

@@ -1,13 +1,13 @@
-package net.manukagames.alfred.schema;
+package net.manukagames.alfred.yaml;
 
 import java.util.Map;
 
 public final class YamlReaders {
+  private YamlReaders() {}
+
   public static String convertToStringOrEmpty(Object value) {
     return value == null ? "" : value.toString();
   }
-
-  private YamlReaders() {}
 
   public static <ValueT> ValueT require(
     String name,
@@ -16,7 +16,7 @@ public final class YamlReaders {
     var value = properties.get(name);
     if (value == null) {
       var error = String.format("required property %s is missing", name);
-      throw SchemaFile.InvalidFormatException.withMessage(error);
+      throw InvalidFormatException.withMessage(error);
     }
     return tryToCast(name, value);
   }
@@ -30,7 +30,7 @@ public final class YamlReaders {
       var error = String.format(
         "property %s has an invalid type: %s", name, typeName
       );
-      throw SchemaFile.InvalidFormatException.withMessage(error);
+      throw InvalidFormatException.withMessage(error);
     }
   }
 }

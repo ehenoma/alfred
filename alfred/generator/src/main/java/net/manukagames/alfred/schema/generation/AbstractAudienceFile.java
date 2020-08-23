@@ -11,19 +11,20 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 
 import net.manukagames.alfred.generation.AbstractCachedGeneratedFile;
-import net.manukagames.alfred.generation.Generation;
 import net.manukagames.alfred.schema.Message;
+import net.manukagames.alfred.schema.Schema;
 
 public abstract class AbstractAudienceFile extends AbstractCachedGeneratedFile {
-  protected AbstractAudienceFile(String name, Generation generation) {
-    super(name, generation);
+  protected final Schema schema;
+
+  protected AbstractAudienceFile(Schema schema) {
+    this.schema = schema;
   }
 
   protected abstract MethodSpec createSendMethod(Message message);
 
   protected Collection<MethodSpec> createSendMethods() {
-    var messages = generation.schema().listMessages();
-    return messages.stream()
+    return schema.listMessages().stream()
       .map(this::createSendMethod)
       .collect(Collectors.toList());
   }

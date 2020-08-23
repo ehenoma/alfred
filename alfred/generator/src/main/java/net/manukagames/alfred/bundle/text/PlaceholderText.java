@@ -1,10 +1,11 @@
 package net.manukagames.alfred.bundle.text;
 
-import com.squareup.javapoet.CodeBlock;
-
 import java.util.Collection;
 
-import net.manukagames.alfred.bundle.BundleGeneration;
+import com.squareup.javapoet.CodeBlock;
+
+import net.manukagames.alfred.bundle.text.part.Part;
+import net.manukagames.alfred.generation.Framework;
 
 final class PlaceholderText implements Text {
   private final Collection<Part> parts;
@@ -13,11 +14,17 @@ final class PlaceholderText implements Text {
     this.parts = parts;
   }
 
-  public void emit(CodeBlock.Builder block, BundleGeneration generation) {
+  public CodeBlock toCode(Framework framework) {
+    var block = CodeBlock.builder();
+    writeTo(block, framework);
+    return block.build();
+  }
+
+  private void writeTo(CodeBlock.Builder block, Framework framework) {
     block.add("return new $T()\n", StringBuilder.class);
     block.indent();
     for (Part part : parts) {
-      part.emit(block, generation);
+      part.emit(block, framework);
     }
     block.addStatement(".toString()");
     block.unindent();

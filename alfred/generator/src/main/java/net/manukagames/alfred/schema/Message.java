@@ -50,10 +50,6 @@ public final class Message {
     return context;
   }
 
-  public boolean hasContext() {
-    return !context.isEmpty();
-  }
-
   @Override
   public String toString() {
     var contextFormatted = context.stream()
@@ -68,6 +64,8 @@ public final class Message {
   }
 
   public static final class Variable {
+    private static final String RECIPIENT_TYPE_NAME = "$Recipient";
+
     public static Variable create(String name, String type) {
       Objects.requireNonNull(name);
       Objects.requireNonNull(type);
@@ -91,7 +89,7 @@ public final class Message {
     }
 
     public boolean hasRecipientType() {
-      return type.equals(Recipient.MESSAGE_VARIABLE_TYPE_NAME);
+      return type.equals(RECIPIENT_TYPE_NAME);
     }
 
     public boolean isIncludedInParameters() {

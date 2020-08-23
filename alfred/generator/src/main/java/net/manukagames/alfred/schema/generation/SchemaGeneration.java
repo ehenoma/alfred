@@ -1,113 +1,90 @@
 package net.manukagames.alfred.schema.generation;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import net.manukagames.alfred.generation.GeneratedFile;
-import net.manukagames.alfred.generation.Generation;
-import net.manukagames.alfred.generation.RecipientSupport;
+import net.manukagames.alfred.generation.OutputPath;
 import net.manukagames.alfred.schema.Schema;
 
 public final class SchemaGeneration {
-  public static SchemaGeneration of(Schema schema, Path outputDirectory) {
-    return new SchemaGeneration(
-      Guice.createInjector(),
-      schema,
-      outputDirectory
-    );
+  public enum Option {
+    GENERATE_AUDIENCE
+  }
+
+  public static SchemaGeneration of(
+    Schema schema,
+    OutputPath path,
+    Option... options
+  ) {
+    boolean generateAudience = isOptionSet(options, Option.GENERATE_AUDIENCE);
+    return new SchemaGeneration(schema, path, generateAudience);
+  }
+
+  private static boolean isOptionSet(Option[] options, Option option) {
+    for (var entry : options) {
+      if (entry.equals(option)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private final Schema schema;
-  private final Injector injector;
-  private final Path outputDirectory;
+  private final OutputPath outputPath;
+  private final boolean generateAudience;
 
-  SchemaGeneration(
-    Injector injector,
+  private SchemaGeneration(
     Schema schema,
-    Path outputDirectory
+    OutputPath outputPath,
+    boolean generateAudience
   ) {
     this.schema = schema;
-    this.injector = injector;
-    this.outputDirectory = outputDirectory;
+    this.outputPath = outputPath;
+    this.generateAudience = generateAudience;
   }
 
-  private void writeFiles(Path targetDirectory, Iterable<GeneratedFile> files) {
-    try {
-      ensureTargetDirectoryExists(targetDirectory);
-      for (var file : files) {
-        file.writeToDirectory(targetDirectory);
-      }
-    } catch (IOException failedWrite) {
-      throw new RuntimeException("could not write generated file", failedWrite);
-    }
+  public void run() throws IOException {
+    var generatedFiles = listGeneratedFiles(schema);
+    outputPath.write(generatedFiles);
   }
 
-  public void run() {
-    var targetDirectory = createTargetDirectory();
-    var generation = createGeneration(targetDirectory);
-    var generatedFiles = listGeneratedFiles(generation);
-    writeFiles(targetDirectory, generatedFiles);
+  private Collection<GeneratedFile> listGeneratedFiles(Schema schema) {
+    return generateAudience
+      ? listAllFiles(schema)
+      : listRequiredFiles(schema);
   }
 
-  private void ensureTargetDirectoryExists(Path directory) throws IOException {
-    if (Files.notExists(directory)) {
-      Files.createDirectories(directory);
-    }
+  private Collection<GeneratedFile> listAllFiles(Schema schema) {
+    return Stream.concat(
+      listRequiredFiles(schema).stream(),
+      listGeneratedAudienceFiles(schema).stream()
+    ).collect(Collectors.toList());
   }
 
-  private Collection<GeneratedFile> listGeneratedFiles(Generation generation) {
+  private Collection<GeneratedFile> listRequiredFiles(Schema schema) {
     return List.of(
-      MessageBundleFile.create(generation),
-      AudienceFile.create(generation),
-      SoloAudienceFile.create(generation),
-      GroupAudienceFile.create(generation),
-      MessageBundlesFile.create(generation),
-      EmptyMessageBundleFile.create(generation),
-      RecipientUtilFile.create(generation)
+      BundleInterfaceFile.fromSchema(schema),
+      EmptyMessageBundleFile.fromSchema(schema),
+      RecipientUtilFile.fromSchema(schema),
+      createBundleRepositoryFile(schema)
     );
   }
 
-  public Generation createGeneration(Path targetDirectory) {
-    return Generation.newBuilder()
-      .withSchema(schema)
-      .withRecipientSupport(findRecipientSupport())
-      .withTargetDirectory(targetDirectory)
-      .create();
+  private BundleRepositoryFile createBundleRepositoryFile(Schema schema) {
+    return generateAudience
+      ? BundleRepositoryFile.fromSchemaWithAudience(schema)
+      : BundleRepositoryFile.fromSchema(schema);
   }
 
-  private Path createTargetDirectory() {
-    var packageTree = schema.packageName().replace(".", File.separator);
-    return outputDirectory.resolve(packageTree);
-  }
-
-  private RecipientSupport findRecipientSupport() {
-    var className = schema.recipient().supportClass();
-    try {
-      var resolvedClass = Class.forName(className);
-      return createSupportFromType(resolvedClass);
-    } catch (ClassNotFoundException invalidName) {
-      throw new IllegalStateException("could not find recipientSupportClass", invalidName);
-    }
-  }
-
-  private RecipientSupport createSupportFromType(Class<?> type) {
-    var instance = injector.getInstance(type);
-    if (!(instance instanceof RecipientSupport)) {
-      var error = String.format(
-        "configured recipientSupportClass %s is not of type RecipientSupport",
-        type.getSimpleName()
-      );
-      throw new IllegalStateException(error);
-    }
-    return (RecipientSupport) instance;
+  private Collection<GeneratedFile> listGeneratedAudienceFiles(Schema schema) {
+    return List.of(
+      AudienceInterfaceFile.fromSchema(schema),
+      SoloAudienceFile.fromSchema(schema),
+      GroupAudienceFile.fromSchema(schema)
+    );
   }
 }

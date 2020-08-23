@@ -3,13 +3,13 @@ package net.manukagames.alfred.schema;
 import com.google.inject.Inject;
 import com.squareup.javapoet.*;
 
-import net.manukagames.alfred.generation.ClassBasedRecipientSupport;
+import net.manukagames.alfred.generation.FixedRecipientFramework;
 
 import java.util.Locale;
 
-public final class TestRecipientSupport extends ClassBasedRecipientSupport {
+public final class TestFramework extends FixedRecipientFramework {
   @Inject
-  private TestRecipientSupport() {
+  private TestFramework() {
     super(String.class, GetAccessorStrategy.create());
   }
 
@@ -27,8 +27,11 @@ public final class TestRecipientSupport extends ClassBasedRecipientSupport {
   @Override
   public CodeBlock createSendCode(String recipientParameter, String messageParameter) {
     return CodeBlock.builder()
-      .addStatement("$T.out.printf(\"%s <- \\\"%s\\\"%n\", $L, $L)",
-        System.class, recipientParameter, messageParameter)
-      .build();
+      .addStatement(
+        "$T.out.printf(\"%s <- \\\"%s\\\"%n\", $L, $L)",
+        System.class,
+        recipientParameter,
+        messageParameter
+      ).build();
   }
 }

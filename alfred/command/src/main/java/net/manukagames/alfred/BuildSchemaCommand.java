@@ -1,7 +1,9 @@
 package net.manukagames.alfred;
 
+import com.google.inject.Guice;
+import net.manukagames.alfred.generation.OutputPath;
 import net.manukagames.alfred.schema.Schema;
-import net.manukagames.alfred.schema.SchemaFile;
+import net.manukagames.alfred.schema.SchemaConfiguration;
 import net.manukagames.alfred.schema.generation.SchemaGeneration;
 import picocli.CommandLine;
 
@@ -34,18 +36,20 @@ final class BuildSchemaCommand implements Callable<Integer> {
 
   @Override
   public Integer call() {
-    SchemaGeneration generation = SchemaGeneration.of(
-      readSchema(),
-      outputDirectory.toPath()
-    );
-    generation.run();
+    var outputPath = OutputPath.fromFile(outputDirectory);
+    var generation = SchemaGeneration.of(readSchema(), outputPath);
+    try {
+      generation.run();
+    } catch (IOException failure) {
+      System.out.println("could not build schema: " + failure.getMessage());
+    }
     return 0;
   }
 
   private Schema readSchema() {
-    var file = SchemaFile.of(schemaFile);
+    var file = SchemaConfiguration.ofFile(schemaFile);
     try {
-      return file.read();
+      return file.read(Guice.createInjector());
     } catch (IOException exception) {
       throw new RuntimeException("failed to read schema", exception);
     }
